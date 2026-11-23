@@ -95,7 +95,7 @@ function Card({ asset, brief, col, onOpen }: { asset: Asset; brief: Brief; col: 
         )}
       </div>
       {also.length > 0 && (
-        <div className="mt-2 flex items-center gap-1 rounded bg-indigo-500/10 px-1.5 py-0.5 text-[10px] text-indigo-700 dark:text-indigo-300">
+        <div className="mt-2 flex items-center gap-1 rounded bg-brand-500/10 px-1.5 py-0.5 text-[10px] text-brand-700 dark:text-brand-300">
           <Split className="size-3" /> In parallel with {also.map((c) => TITLE[c].replace(' Review', '')).join(' & ')}
         </div>
       )}
@@ -319,8 +319,8 @@ export default function Approvals() {
           <Column col="pending" count={cols.pending.length}>
             {renderCards('pending')}
           </Column>
-          <div className="rounded-2xl border border-dashed border-indigo-500/40 bg-indigo-500/4 p-2">
-            <div className="mb-2 flex items-center gap-2 px-1.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+          <div className="rounded-2xl border border-dashed border-brand-500/40 bg-brand-500/4 p-2">
+            <div className="mb-2 flex items-center gap-2 px-1.5 text-[11px] font-semibold text-brand-700 dark:text-brand-300">
               <Split className="size-3.5" /> Parallel review lane — Brand, Business and Risk run at the same time
             </div>
             <div className="grid grid-cols-3 gap-2">

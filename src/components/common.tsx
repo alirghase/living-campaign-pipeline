@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Info, Mail, Monitor } from 'lucide-react'
-import { formats, journeyLabel, channelLabel } from '@/data/formats'
+import { journeyLabel, channelLabel } from '@/data/formats'
 import { member } from '@/data/team'
 import type { Asset, Channel, Journey } from '@/data/types'
-import { GRADIENTS, journeyClass } from '@/lib/colors'
+import { journeyClass } from '@/lib/colors'
+import { Creative } from '@/components/creative/Creative'
 import { fmtDuration } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -11,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 export function JourneyPill({ journey, className }: { journey: Journey; className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap', journeyClass[journey].pill, className)}>
-      <span className={cn('size-1.5 rounded-full', journey === 'rental' ? 'bg-teal-400' : 'bg-purple-400')} />
+      <span className={cn('size-1.5 rounded-full', journey === 'rental' ? 'bg-rental-400' : 'bg-shared-400')} />
       {journeyLabel[journey]}
     </span>
   )
@@ -66,68 +67,38 @@ export function ChannelIcons({ channels, className }: { channels: Channel[]; cla
   )
 }
 
-/** Placeholder creative: journey gradient at the format's true aspect ratio. */
+/** The asset rendered through the brand layout system at its true aspect ratio. */
 export function AssetThumb({
   asset,
   className,
   box = 'h-36',
-  showCopy = true,
 }: {
-  asset: Pick<Asset, 'journey' | 'format' | 'headlines' | 'cta' | 'variant' | 'id'>
+  asset: Pick<Asset, 'journey' | 'format' | 'headlines' | 'cta' | 'variant' | 'id' | 'body'> & { image?: string }
   className?: string
   box?: string
   showCopy?: boolean
 }) {
-  const f = formats[asset.format]
-  const ratio = f.width / f.height
-  const g = GRADIENTS[asset.journey]
-  const bg = g[(asset.variant + asset.format.length + asset.id.length) % g.length]
-  const tiny = f.height <= 100
   return (
-    <div className={cn('flex w-full items-center justify-center rounded-lg bg-muted/40 p-2', box, className)}>
-      <div
-        className="relative overflow-hidden rounded-md shadow-sm ring-1 ring-black/10"
-        style={{
-          background: bg,
-          aspectRatio: `${f.width} / ${f.height}`,
-          ...(ratio >= 1.6 ? { width: '100%' } : { height: '100%' }),
-          maxWidth: '100%',
-          maxHeight: '100%',
-        }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(255,255,255,.25),transparent_45%)]" />
-        {!showCopy ? (
-          <div className="absolute inset-0 flex items-center justify-center p-0.5">
-            <span className="truncate font-mono text-[8px] font-semibold text-white/90">{f.short}</span>
-          </div>
-        ) : (
-        <div className={cn('absolute inset-0 flex text-white', tiny ? 'flex-row items-center gap-2 px-2' : 'flex-col justify-between p-[7%]')}>
-          <span className={cn('font-semibold tracking-tight opacity-95', tiny ? 'text-[9px]' : 'text-[10px]')}>Living</span>
-          <span
-            className={cn(
-              'leading-tight font-semibold drop-shadow-sm',
-              tiny ? 'line-clamp-1 flex-1 text-[9px]' : ratio < 0.8 ? 'line-clamp-4 text-[10px]' : 'line-clamp-2 text-[11px]',
-            )}
-          >
-            {asset.headlines[0]}
-          </span>
-          <span className={cn('flex justify-between gap-1', ratio < 0.8 ? 'flex-col items-start' : 'items-center', tiny && 'shrink-0')}>
-            {!tiny && <span className="rounded bg-white/90 px-1.5 py-0.5 text-[8px] font-semibold text-slate-900">{asset.cta}</span>}
-            <span className="rounded bg-black/35 px-1 py-0.5 font-mono text-[8px] backdrop-blur-sm">
-              {f.short} {f.width}×{f.height}
-            </span>
-          </span>
-        </div>
-        )}
-      </div>
+    <div className={cn('flex w-full items-center justify-center rounded-lg bg-muted/60 p-2', box, className)}>
+      <Creative
+        fit="contain"
+        className="rounded-md"
+        format={asset.format}
+        journey={asset.journey}
+        headline={asset.headlines[0]}
+        body={asset.body}
+        cta={asset.cta}
+        image={asset.image}
+        seed={`${asset.id}-${asset.variant}`}
+      />
     </div>
   )
 }
 
 export function Callout({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-start gap-2.5 rounded-lg border border-indigo-500/25 bg-indigo-500/8 px-3.5 py-2.5 text-sm text-indigo-900 dark:text-indigo-200', className)}>
-      <Info className="mt-0.5 size-4 shrink-0 text-indigo-500" />
+    <div className={cn('flex items-start gap-2.5 rounded-lg border border-brand-500/25 bg-brand-500/8 px-3.5 py-2.5 text-sm text-brand-900 dark:text-brand-200', className)}>
+      <Info className="mt-0.5 size-4 shrink-0 text-brand-500" />
       <span>{children}</span>
     </div>
   )
@@ -142,7 +113,7 @@ export function MemberAvatar({ id, size = 'sm', showName }: { id: string | undef
   if (id === 'system') {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-flex size-5 items-center justify-center rounded-full bg-indigo-500/20 text-[9px] font-semibold text-indigo-400">AI</span>
+        <span className="inline-flex size-5 items-center justify-center rounded-full bg-brand-500/20 text-[9px] font-semibold text-brand-400">AI</span>
         {showName && <span className="text-xs">Automation</span>}
       </span>
     )
@@ -200,7 +171,12 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 }
 
 export function ToolBadge({ tool }: { tool: Asset['tool'] }) {
-  const c = { Firefly: 'text-orange-600 dark:text-orange-300 bg-orange-500/12', 'Figma AI': 'text-pink-600 dark:text-pink-300 bg-pink-500/12', Copilot: 'text-sky-600 dark:text-sky-300 bg-sky-500/12' }[tool]
+  const c = {
+    Firefly: 'text-orange-700 dark:text-orange-300 bg-orange-500/12',
+    'Figma AI': 'text-pink-700 dark:text-pink-300 bg-pink-500/12',
+    Copilot: 'text-sky-700 dark:text-sky-300 bg-sky-500/12',
+    Gemini: 'text-brand-700 dark:text-brand-300 bg-brand-500/12',
+  }[tool]
   return <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', c)}>{tool}</span>
 }
 
@@ -227,7 +203,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={cn(
             'rounded-md px-2.5 py-1 font-medium whitespace-nowrap transition-colors',
-            value === o.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            value === o.value ? 'bg-card font-semibold text-foreground shadow-sm ring-1 ring-black/5 dark:bg-accent dark:ring-white/10' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {o.label}
@@ -240,7 +216,7 @@ export function Segmented<T extends string>({
 const STATUS_CLS: Record<string, string> = {
   Draft: 'bg-muted text-muted-foreground',
   Routed: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  'In Production': 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300',
+  'In Production': 'bg-brand-500/12 text-brand-700 dark:text-brand-300',
   'In Review': 'bg-amber-500/12 text-amber-700 dark:text-amber-300',
   Approved: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
   Live: 'bg-emerald-500 text-white',

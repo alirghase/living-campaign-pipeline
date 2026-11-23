@@ -23,7 +23,7 @@ export function runChecks(asset: Asset, brief: Brief): CheckResult[] {
   const f = formats[asset.format]
   const h = hash(asset.id + asset.version)
   const other = asset.journey === 'rental' ? 'Shared Ownership' : 'Rental'
-  const palette = asset.journey === 'rental' ? 'Rental teal' : 'Shared Ownership purple'
+  const palette = asset.journey === 'rental' ? 'Lloyds Living green + Rental lime' : 'Lloyds Living green + Shared Ownership blue'
   const primary = asset.headlines[0].length + 1 + asset.cta.length
   const tone = 86 + (h % 11)
   const align = 82 + ((h >> 3) % 14)

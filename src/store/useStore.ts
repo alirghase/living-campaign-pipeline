@@ -48,6 +48,7 @@ interface State {
   publish: (assetIds: string[]) => void
   toggleDelivery: (assetId: string) => void
   reuse: (assetId: string) => string
+  importCampaign: (brief: Brief, assets: Asset[]) => void
   reset: () => void
 }
 
@@ -69,7 +70,7 @@ export const useStore = create<State>((set, get) => ({
   assets: seedAssets,
   journey: 'all',
   pilot: false,
-  theme: 'dark',
+  theme: 'light',
   search: '',
 
   setJourney: (journey) => set({ journey }),
@@ -291,6 +292,8 @@ export const useStore = create<State>((set, get) => ({
     set({ briefs: [brief, ...s.briefs] })
     return id
   },
+
+  importCampaign: (brief, assets) => set((s) => ({ briefs: [brief, ...s.briefs], assets: [...assets, ...s.assets] })),
 
   reset: () => set({ briefs: seedBriefs, assets: seedAssets, journey: 'all', pilot: false, search: '' }),
 }))

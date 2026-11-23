@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MemberAvatar, Segmented } from '@/components/common'
+import { AiSettingsDialog, AiStatusChip } from '@/components/agent/AiSettingsDialog'
+import { Wordmark } from '@/components/creative/Creative'
 import { formats } from '@/data/formats'
 import { CURRENT_USER_ID, member } from '@/data/team'
 import { PILOT_BRIEF_ID } from '@/data/briefs'
@@ -39,9 +41,15 @@ export function TopBar() {
   }, [search, briefs, assets, pilot])
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur">
-      <div className="text-sm font-semibold tracking-tight whitespace-nowrap">Living Campaign Pipeline</div>
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-card/85 px-4 backdrop-blur sm:gap-4 sm:px-6">
+      <div className="hidden text-sm font-semibold tracking-tight whitespace-nowrap md:block">
+        Campaign Pipeline <span className="hidden font-normal text-muted-foreground xl:inline">· concept demo</span>
+      </div>
+      <span className="text-brand-700 lg:hidden dark:text-white">
+        <Wordmark size={15} color="currentColor" />
+      </span>
       <Segmented
+        className="hidden sm:inline-flex"
         value={pilot ? 'pilot' : 'full'}
         onChange={(v) => {
           setPilot(v === 'pilot')
@@ -52,7 +60,12 @@ export function TopBar() {
           { value: 'full', label: 'Full' },
         ]}
       />
-      <div className="relative ml-auto w-80">
+      <AiSettingsDialog>
+        <button className="ml-auto" aria-label="AI settings">
+          <AiStatusChip />
+        </button>
+      </AiSettingsDialog>
+      <div className="relative hidden w-72 md:block">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
@@ -76,7 +89,7 @@ export function TopBar() {
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-accent"
                 onMouseDown={() => navigate(a.stage === 'approved' || a.stage === 'published' ? '/library' : a.stage === 'approval' ? '/approvals' : a.stage === 'qa' ? '/checks' : '/studio')}
               >
-                <span className={cn('size-2 rounded-full', a.journey === 'rental' ? 'bg-teal-400' : 'bg-purple-400')} />
+                <span className={cn('size-2 rounded-full', a.journey === 'rental' ? 'bg-rental-400' : 'bg-shared-400')} />
                 <span className="flex-1 truncate">{b.name}</span>
                 <span className="text-muted-foreground">{formats[a.format].short}</span>
               </button>

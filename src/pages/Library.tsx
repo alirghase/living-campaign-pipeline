@@ -219,7 +219,7 @@ export default function Library() {
               <div key={brief.id} className="rounded-xl border bg-card">
                 <div className="flex items-center gap-4 p-4">
                   <button className="flex flex-1 items-center gap-4 text-left" onClick={() => setExpanded((e) => (isOpen ? e.filter((x) => x !== brief.id) : [...e, brief.id]))}>
-                    <span className={cn('flex size-9 items-center justify-center rounded-lg', brief.journey === 'rental' ? 'bg-teal-500/15 text-teal-500' : 'bg-purple-500/15 text-purple-500')}>
+                    <span className={cn('flex size-9 items-center justify-center rounded-lg', brief.journey === 'rental' ? 'bg-rental-500/15 text-rental-500' : 'bg-shared-500/15 text-shared-500')}>
                       <Package className="size-4" />
                     </span>
                     <div className="min-w-0">

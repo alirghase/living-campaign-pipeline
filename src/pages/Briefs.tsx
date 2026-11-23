@@ -40,7 +40,7 @@ function NewBriefDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   function pickJourney(j: Journey) {
     setJourney(j)
     setSelected(journeyPresets[j].defaultChannels)
-    if (!development) setDevelopment(j === 'rental' ? 'Living Stratford' : 'Living Barking Riverside')
+    if (!development) setDevelopment(j === 'rental' ? 'Oxenden Park, Herne Bay' : 'Hampton Beach, Peterborough')
   }
 
   function submit(route: boolean) {
@@ -49,7 +49,7 @@ function NewBriefDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
       {
         name: name.trim(),
         journey,
-        development: development.trim() || 'Living Stratford',
+        development: development.trim() || 'Oxenden Park, Herne Bay',
         objective: objective.trim(),
         audience: audience.trim() || 'Renters and first-time buyers in the development catchment.',
         channels: selected,
@@ -82,7 +82,7 @@ function NewBriefDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
           </div>
           <div className="space-y-1.5">
             <Label>Development</Label>
-            <Input value={development} onChange={(e) => setDevelopment(e.target.value)} placeholder="e.g. Living Leeds Dock" />
+            <Input value={development} onChange={(e) => setDevelopment(e.target.value)} placeholder="e.g. Frog Island, Leicester" />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Journey</Label>
@@ -94,7 +94,7 @@ function NewBriefDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
                   onClick={() => pickJourney(j)}
                   className={cn(
                     'rounded-lg border p-3 text-left transition-colors',
-                    journey === j ? (j === 'rental' ? 'border-teal-500 bg-teal-500/10' : 'border-purple-500 bg-purple-500/10') : 'hover:bg-muted/60',
+                    journey === j ? (j === 'rental' ? 'border-rental-500 bg-rental-500/10' : 'border-shared-500 bg-shared-500/10') : 'hover:bg-muted/60',
                   )}
                 >
                   <JourneyPill journey={j} />
@@ -234,7 +234,7 @@ export default function Briefs() {
                 <TableCell className="pl-4">
                   <div className="flex items-center gap-1.5 font-medium">
                     {b.name}
-                    {b.reusedFrom && <Recycle className="size-3.5 text-indigo-500" aria-label="Reused" />}
+                    {b.reusedFrom && <Recycle className="size-3.5 text-brand-500" aria-label="Reused" />}
                   </div>
                   <div className="text-xs text-muted-foreground">{b.development}</div>
                 </TableCell>
@@ -270,7 +270,7 @@ export default function Briefs() {
               <SheetHeader>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={openStatus!} />
-                  {open.reusedFrom && <span className="text-xs text-indigo-500">Reused from an approved campaign</span>}
+                  {open.reusedFrom && <span className="text-xs text-brand-500">Reused from an approved campaign</span>}
                 </div>
                 <SheetTitle className="text-lg">{open.name}</SheetTitle>
                 <SheetDescription>Structured brief · created {fmtDate(open.createdAt)}</SheetDescription>

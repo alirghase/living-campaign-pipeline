@@ -1,91 +1,86 @@
-# Living Campaign Pipeline
+# Lloyds Living · Campaign Agent
 
 **Open the demo:** https://alirghase.github.io/living-campaign-pipeline/
 
+> Concept demo built for an internal pitch. It is not an official Lloyds Living or Lloyds Banking Group product. Developments and news are taken from public sources; offers, numbers, people and audiences are illustrative.
+
 ## What is this, in one breath?
 
-Picture a bakery that has to make the same cake in five sizes for five different shops. Done by hand, someone bakes each cake separately and then walks it round to three managers for a taste test. This app is the machine version. You write **one recipe** (a *brief*), the machine **bakes all five sizes** (the *assets* for Facebook, Instagram, LinkedIn, Google ads and email), a **robot checks** each cake for obvious mistakes, the **three managers taste at the same time** instead of one after another, and the good cakes go out to the shops. A scoreboard at the end shows how much faster that is.
+A marketer types one campaign request in plain English. A team of **six AI agents built on Google Gemini** turns it into a finished, channel-ready campaign:
 
-The brand is a made-up property company called **Living**. It sells homes two ways:
+| Agent | What it does | Runs on |
+|---|---|---|
+| **Brief Strategist** | Turns the free-text request into a structured brief: objective, audience, insight, key messages, master headline | Gemini (structured JSON) |
+| **Journey Router** | Decides Rental or Shared Ownership, then sets the SLA, reviewers and formats | Gemini + routing rules |
+| **Copywriter** | Writes 3 headline options, body and CTA for every format, to each character limit | Gemini |
+| **Art Director** | Defines one visual concept and writes the key-visual prompt | Gemini |
+| **Image Generator** | Paints **one** key visual, then re-frames it for every aspect ratio using it as a reference, so every format shows the same homes and people | Gemini image models ("Nano Banana") |
+| **Brand & Compliance QA** | Runs 8 checks per asset (vision + rules) and sends failures back to the Copywriter or Image Generator to fix themselves | Gemini vision + rules |
+| **Brand, Business & Risk** | **People** pick headlines, direct the visuals ("make it golden hour") and approve, all three in parallel | People |
 
-- **Rental** (shown in **teal**): you rent a flat.
-- **Shared Ownership** (shown in **purple**): you buy part of a home and rent the rest.
+Copywriter and Art Director run in parallel. Everything streams into a live **agent trace** so the room can see each agent think, call a tool and hand off.
 
-**The one rule to remember:** *the machine does the boring, repeatable work, and people make every important decision.*
+**The design rule:** the model makes the *photography*; the brand layout system sets the *type*. Headline, CTA, logo and the mandatory disclaimer are typeset by code at each channel's true pixel size. Nothing the AI generates can misspell a legal line, and Risk always approves the exact words that will run.
 
-Everything here is pretend: the people, the homes, the numbers. Nothing is sent anywhere, and no real AI runs. Click whatever you like.
+The whole app is styled in the Lloyds Living / Lloyds Banking Group palette: Lloyds green `#00864f`, deep green `#004a36`, lime `#77ba00` for Rental, Lloyds blue `#2178b0` for Shared Ownership, and warm stone `#efedea`. Example briefs are grounded in real Lloyds Living news: Oxenden Park (Herne Bay), Hampton Beach (Peterborough), Gaydon, Burleyfields, Pathways and the *Lloyds Living Stories* series.
+
+---
+
+## Live or demo mode
+
+- **Demo mode** (default, no setup): every agent runs with offline outputs and a brand illustration instead of photography. Same flow, same trace, same QA self-repair. Safe for a projector with bad wi-fi.
+- **Live mode:** click **Connect Google AI Studio**, paste a key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and press **Connect**. The app lists your models and picks the newest fast text model and image model; you can change both. Image generation may need billing enabled on the AI Studio project.
+
+Your key stays in your browser (`localStorage`) and is sent only to `generativelanguage.googleapis.com` in the `x-goog-api-key` header. If any live call fails (quota, network, safety block), that agent falls back to its offline output and says so in the trace, so the demo never stalls.
+
+**Safety net for the meeting:** after a good live run, click **Save run**. This downloads a JSON file including the generated images. In the meeting, **Load saved run** brings it back instantly with no network needed.
 
 ---
 
 ## The 5-minute show-and-tell
 
-Follow these steps in order. Each step says **what to click**, **what you'll see**, and **what to say**.
-
 ### Before you start
-- Use a laptop or a big screen. The app is built for a wide display.
-- The **moon/sun button** at the top right switches between dark and light. Use light mode on a projector.
-- If things get messy, click the **round avatar (PS)** at the top right and choose **Reset demo data**. Everything goes back to the start.
+- Laptop or big screen, light mode (moon/sun button top right).
+- Optional: connect Google AI Studio beforehand and do one rehearsal run, then **Save run**.
+- **Reset demo data** lives under the round avatar (PS), top right.
 
-### Step 1: The big picture (Pipeline Overview)
-- **You'll see:** 8 boxes joined in a loop, with little dots moving between them. Those dots are work flowing through.
-- **Notice:** each box has a tag. **Automated** means the machine does it. **People decide** means a human does.
-- **Notice the colours:** a green dot means fine, amber means slowing down, red means stuck.
-- **Click** *Rental* or *Shared Ownership* at the top right to see just one type of home.
-- **Say:** *"This is the whole journey, from idea to results. The dotted line on the left means we reuse what we learned next time."*
+### Step 1: One brief in (Campaign Agent, the home screen)
+- Pick **Oxenden Park: first residents**. Each card cites the public news it's based on.
+- The request box shows what a marketer would really type. Edit it live if you like: change the audience, add LinkedIn.
+- **Say:** *"No forms. Just tell it what you need."*
+- Click **Run the agent team**.
 
-### Step 2: Write a brief (Structured Briefs)
-- **Click** **Structured Briefs** in the left menu. You'll see a list of campaigns.
-- **Click** any row. A panel slides out with the full brief: who it's for, the key messages and the tone.
-- **Click** **Create new brief** (top right). Type a name, for example *Spring Launch Leeds*.
-- **Click the Rental box.** Templates, tone tips and the legal wording fill in by themselves.
-- Type a short objective, then **click Submit & auto-route**.
-- **Say:** *"Everyone fills in the same form, so nobody has to chase for missing details later."*
+### Step 2: Watch the agents work
+- The rail at the top lights up agent by agent. **Copywriter and Art Director run in parallel.**
+- The **agent trace** on the right streams every thought, tool call and hand-off. Click any line with a ▸ to see the raw JSON.
+- The brief, routing decision (with confidence) and creative concept fill in as they're produced.
+- **Say:** *"Each agent has one job and a typed output. You can audit every decision."*
 
-### Step 3: It sorts itself (Journey Routing)
-- **Click** **Journey Routing**. You'll see two columns, Rental and Shared Ownership. Your new brief is already in the Rental column.
-- **Click** **Generate 5 assets** on your brief and wait a second.
-- **Say:** *"It went to the right team by itself, and each team has its own templates."*
+### Step 3: Self-repair
+- Look for the orange **Self-repairing** status and the line *"failed copy length. Sending back to the Copywriter."* QA caught a headline too long for the 728×90 banner, and the Copywriter fixed it before any person saw it.
+- **Say:** *"The silly mistakes never reach a manager."*
 
-### Step 4: One idea, many versions (Content Studio)
-- You land on a picture with **the main message in the middle** and **lines out to five versions**, one per channel, each a different size and length.
-- **This is the "create once, adapt many" moment, so pause here.**
-- Scroll down. **Click Regenerate** on any card. It thinks for a moment, then writes new wording.
-- **Click** **Send 5 to pre-checks** (top right).
-- **Say:** *"One idea becomes five ready-to-use versions. The designer picks and polishes instead of starting from scratch."*
+### Step 4: One key visual, every format
+- Six assets, each at its real size, all from **one** key visual. Toggle **In channel** to see them inside an Instagram feed, a story, a Facebook post, a display ad and an email.
+- Hover the 8 QA bars on any card to read each check.
+- **Say:** *"Create once, adapt many: for real this time, not a mock-up."*
 
-### Step 5: The robot checks (Pre-Checks & QA)
-- **Click** **Pre-Checks & QA**. Pick one of your new assets from the list on the left.
-- **Click** **Run checks**. Watch it tick through 8 checks one at a time: size, colours, logo, legal wording, tone and more.
-- A **green** result shows **Submit for approval**. Click it.
-- A **red** result shows what's wrong and a **Send back to creation** button.
-- **Say:** *"The robot catches silly mistakes, so the managers never waste time on them."*
+### Step 5: People decide
+- Pick a different headline option on a card, and the creative updates.
+- Type a direction such as *"golden hour light"* or *"add a family dog"* and press **Refine**. In live mode Gemini edits the photo itself.
+- Click **Send 6 to approvers**.
+- **Say:** *"AI does the production. People own the judgement."*
 
 ### Step 6: Three managers at once (Approvals)
-- **Click** **Approvals**. The middle section is the **parallel review lane**: Brand, Business and Risk side by side.
-- Cards with a **red timer** are overdue. Nobody has to chase by email, because you can see it.
-- **Drag** a card from *Pending* into **Brand**, then drag the same card into **Risk**. It's now in both at once.
-- **Click** a card. You see the asset **next to its original brief**, plus the list of who did what and when.
-- Under **Review as**, approve as **Brand**, then **Business**, then **Risk**. After the third, it's fully approved.
-- **Say:** *"The three checks happen at the same time instead of one after another. That's where most of the waiting used to go."*
+- You land on **Approvals** with the new campaign in the parallel lane: Brand, Business and Risk side by side.
+- Open a card: the asset sits next to its brief, and the audit trail lists every agent step.
+- Approve as Brand, then Business, then Risk. After the third, it's fully approved.
 
-### Step 7: The approved library (Campaign Package)
-- **Click** **Campaign Package**. Each row is one campaign with all its versions bundled together.
-- **Click** a row to open it, then **click Publish**. Bars fill for each channel, then confetti 🎉.
-- **Click Reuse** on any asset. It starts a new brief from that approved work.
-- **Say:** *"One place for every approved asset, and good work gets reused instead of rebuilt."*
-
-### Step 8: Where it goes (Channel Delivery)
-- **Click** **Channel Delivery**. You'll see one column per channel showing what's live, scheduled or paused, plus a pretend social-media scheduler.
-
-### Step 9: The scoreboard (Measurement)
-- **Click** **Measurement**. The top row compares then and now. For example, brief to launch is **3.2 days, down from 8.5**.
-- The charts and the **Assumptions validation** table check each claim we made against the evidence.
-- **Process health** points to the current slow spot.
-- **Say:** *"These numbers changed as we clicked through. Every action feeds the scoreboard."*
-
-### Bonus: the Pilot button
-- **Click** **Pilot** at the top. Everything shrinks to **one Rental campaign**.
-- **Say:** *"We start small with one campaign, prove it works, then roll it out to Shared Ownership."*
+### Step 7: Package, deliver, measure
+- **Campaign Package**: the approved assets bundled by campaign. **Publish**, then confetti 🎉. **Reuse** starts a new brief from approved work.
+- **Channel Delivery**: what's live, scheduled or paused per channel.
+- **Measurement**: brief to launch is **3.2 days, down from 8.5**, and the numbers move as you click.
+- **Pipeline Overview** shows the whole 8-stage loop; **Pilot** at the top narrows everything to one Rental campaign.
 
 ---
 
@@ -93,10 +88,12 @@ Follow these steps in order. Each step says **what to click**, **what you'll see
 
 | Question | Answer |
 |---|---|
-| Is the AI real? | Not in this demo. The words are pre-written to show how it would work. The tool names (Firefly, Figma AI, Copilot) are just labels. |
-| Is the data real? | No. Every name, home, number and post is made up. |
+| Is the AI real? | Yes, in live mode. Every agent calls Gemini through Google AI Studio, and images come from Gemini image models. Demo mode uses offline outputs and says so on screen. |
+| Can it write something off-brand or non-compliant? | The QA agent checks every asset (journey leakage, banned claims, length, tone, brief fit, stray text in images) and sends failures back. Disclaimers are locked into the layout, not generated. And nothing goes live without three human approvals. |
+| Why not let the AI put the text in the image? | Image models still misspell words and can't be trusted with legal lines. Typesetting copy in code keeps it crisp, on-brand and exactly what Risk approved. |
+| Where does the key go? | Only to Google, from your browser. For production, calls would go through a Lloyds-hosted service (for example Vertex AI) with no keys in the browser. |
+| Is the data real? | Developments and news are public. People, offers, numbers and performance data are made up. |
 | Does anything get posted? | No. Publishing is an animation only. |
-| Who makes the decisions? | People do. Brand, Business and Risk approve every asset before it can go live. |
 
 ---
 
@@ -104,10 +101,23 @@ Follow these steps in order. Each step says **what to click**, **what you'll see
 
 ```bash
 npm install
-npm run dev      # local version at http://localhost:5173
+npm run dev      # http://localhost:5173
 npm run build    # static build in dist/
 ```
 
-Every push to `main` deploys to GitHub Pages automatically.
+Every push to `main` deploys to GitHub Pages.
 
-React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Zustand, React Router, Recharts, dnd-kit. Synthetic data lives in `src/data/`, workflow actions in `src/store/useStore.ts`, and the 9 screens in `src/pages/`.
+React 19, TypeScript, Vite, Tailwind CSS 4, shadcn/ui, Zustand, React Router, Recharts, dnd-kit.
+
+| Path | What's there |
+|---|---|
+| `src/ai/gemini.ts` | Minimal Gemini REST client: model discovery, structured JSON (`responseSchema`), image generation with `imageConfig.aspectRatio` and reference images, retries |
+| `src/ai/agents.ts` | The six agents, the orchestrator (`runPipeline`), QA rules and the self-repair loop |
+| `src/ai/runStore.ts` | Run state, live trace, human edits, save/load run, hand-off into the approvals pipeline |
+| `src/ai/brand.ts`, `src/ai/examples.ts` | Condensed brand book that agents follow; example briefs |
+| `src/ai/scene.ts` | Procedural brand illustration used offline |
+| `src/components/creative/Creative.tsx` | Brand layout system: typesets each format at native pixel size |
+| `src/components/agent/*`, `src/pages/Agent.tsx` | Campaign Agent UI |
+| `src/data/`, `src/store/useStore.ts`, `src/pages/` | Synthetic pipeline data, workflow actions and the downstream screens |
+
+**Production path:** move the Gemini calls behind a server (Vertex AI or a Cloud Run proxy) so no key is in the browser, persist runs and assets, and connect the approved package to the real channel APIs.

@@ -12,27 +12,28 @@ const banks: Record<Journey, CopyBank> = {
   rental: {
     long: [
       'Your next home is waiting in {area}',
-      'Pet-friendly rentals in {area}',
+      'Room to grow in {area}',
       'Move in this month — no hidden fees',
-      'Rent direct from Living. No agency fees, ever.',
+      'Rent direct from Lloyds Living. No agency fees.',
       'Brand-new homes in {area}, ready when you are',
       'Longer tenancies, fair rent reviews, zero surprises',
-      'Bring the dog. Bring the cat. Bring the plants.',
+      'More space, lower bills, brand-new home',
       'Your own front door, five minutes from the station',
-      'On-site team, gym and roof terrace — all in the rent',
+      'Energy-efficient homes, lower bills from day one',
+      'Managed by our own team, not an agent',
     ],
     short: [
       'Your next home is waiting',
       'No agency fees, ever',
       'Move in this month',
-      'Pet-friendly homes in {area}',
+      'Brand-new in {area}',
       'New homes in {area}',
       'Rent direct. No surprises.',
     ],
     body: [
-      'Studios to three-bed homes in {area}. No agency fees, a team on site seven days a week, and pets welcome.',
+      'Brand-new two to four-bed homes in {area}. Energy-efficient, professionally managed by our in-house team, and pets considered.',
       'Choose a 1–3 year tenancy with rent reviews you can plan for. Viewings available this weekend.',
-      'Furnished or unfurnished, ready from this month. Bills set up for you on day one.',
+      'Gardens, parking and lower energy bills, ready from this month. Rent direct with no agency fees.',
     ],
     cta: ['Book a viewing', 'See available homes', 'Check availability', 'Register interest'],
   },
@@ -67,7 +68,8 @@ const banks: Record<Journey, CopyBank> = {
 const SHORT_FORMATS: FormatId[] = ['gd-leaderboard', 'gd-mpu', 'ig-story']
 
 export function areaOf(brief: Pick<Brief, 'development'>) {
-  return brief.development.replace(/^Living\s+/, '')
+  const parts = brief.development.split(',')
+  return parts[parts.length - 1].trim()
 }
 
 function fill(text: string, brief: Brief) {

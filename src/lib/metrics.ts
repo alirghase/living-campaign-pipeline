@@ -34,7 +34,7 @@ function observe(briefs: Brief[], assets: Asset[]) {
     reused: assets.map((a) => (a.reused ? 1 : 0)),
     firstPass: checked.map((a) => (a.firstPassQa ? 1 : 0)),
     review: { brand: reviewHours('brand'), business: reviewHours('business'), risk: reviewHours('risk') },
-    tools: { Firefly: toolRevs('Firefly'), 'Figma AI': toolRevs('Figma AI'), Copilot: toolRevs('Copilot') },
+    tools: { Gemini: toolRevs('Gemini'), Firefly: toolRevs('Firefly'), 'Figma AI': toolRevs('Figma AI'), Copilot: toolRevs('Copilot') },
     caught: auditCount(/^Pre-checks (failed|passed with)/),
     missed: auditCount(/(requested changes|rejected)/),
     rental: assets.filter((a) => a.journey === 'rental').length,

@@ -30,19 +30,19 @@ import { useStore } from '@/store/useStore'
 function useChartTheme() {
   const dark = useStore((s) => s.theme) === 'dark'
   return {
-    grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.08)',
-    axis: dark ? '#8b8fa3' : '#64748b',
-    surface: dark ? '#1f2029' : '#ffffff',
+    grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,38,28,0.08)',
+    axis: dark ? '#9db2a9' : '#5f5f5c',
+    surface: dark ? '#111d19' : '#ffffff',
     tooltip: {
       contentStyle: {
-        background: dark ? '#23242e' : '#ffffff',
+        background: dark ? '#13211c' : '#ffffff',
         border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}`,
         borderRadius: 8,
         fontSize: 12,
-        color: dark ? '#f1f2f6' : '#0f172a',
+        color: dark ? '#eef3f0' : '#1a1a1a',
       },
-      labelStyle: { color: dark ? '#f1f2f6' : '#0f172a', fontWeight: 600 },
-      itemStyle: { color: dark ? '#c9cbd6' : '#334155' },
+      labelStyle: { color: dark ? '#eef3f0' : '#1a1a1a', fontWeight: 600 },
+      itemStyle: { color: dark ? '#c5d6ce' : '#323233' },
       cursor: { fill: dark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)' },
     },
   }
@@ -228,9 +228,9 @@ export default function Insights() {
           subtitle="Quarter to date"
           table={{ columns: ['Journey', 'Assets', '%'], rows: data.journeys.map((j) => [j.name, j.value, `${j.pct}%`]) }}
         >
-          <div className="flex h-full items-center">
-            <div className="relative h-full flex-1">
-              <ResponsiveContainer>
+          <div className="flex h-full items-center justify-around gap-4">
+            <div className="relative size-48 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Tooltip {...t.tooltip} formatter={(v, n) => [`${v} assets`, n]} />
                   <Pie data={data.journeys} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="88%" paddingAngle={2} stroke={t.surface} strokeWidth={2}>
@@ -244,7 +244,7 @@ export default function Insights() {
                 <span className="text-[11px] text-muted-foreground">assets</span>
               </div>
             </div>
-            <div className="w-40 space-y-3">
+            <div className="w-44 space-y-3">
               {data.journeys.map((j, i) => (
                 <div key={j.name} className="flex items-center gap-2 text-xs">
                   <span className="size-2.5 rounded-full" style={{ background: i === 0 ? CHART.journey.rental : CHART.journey.shared }} />

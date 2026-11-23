@@ -68,7 +68,7 @@ function Queue({ journey, briefs }: { journey: Journey; briefs: { brief: Brief; 
   const owner = member(preset.ownerId)
   const routed = briefs.filter((b) => b.status === 'Routed').length
   return (
-    <div className={cn('rounded-xl border p-4', journey === 'rental' ? 'border-teal-500/25 bg-teal-500/4' : 'border-purple-500/25 bg-purple-500/4')}>
+    <div className={cn('rounded-xl border p-4', journey === 'rental' ? 'border-rental-500/25 bg-rental-500/4' : 'border-shared-500/25 bg-shared-500/4')}>
       <div className="flex items-center gap-2">
         <JourneyPill journey={journey} className="text-xs" />
         <span className="rounded-full bg-muted px-2 text-xs font-semibold tabular-nums">{briefs.length}</span>

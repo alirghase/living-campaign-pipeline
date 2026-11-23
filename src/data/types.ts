@@ -24,7 +24,7 @@ export type QaState = 'not-run' | CheckStatus
 export type ReviewType = 'brand' | 'business' | 'risk'
 export type ReviewStatus = 'pending' | 'in-review' | 'approved' | 'changes' | 'rejected'
 
-export type Tool = 'Firefly' | 'Figma AI' | 'Copilot'
+export type Tool = 'Firefly' | 'Figma AI' | 'Copilot' | 'Gemini'
 
 export type DeliveryStatus = 'Scheduled' | 'Live' | 'Paused'
 
@@ -133,4 +133,9 @@ export interface Asset {
   deliveryStatus?: DeliveryStatus
   reused: boolean
   audit: AuditEntry[]
+  /** Generated key visual (data URL). Falls back to the brand illustration. */
+  image?: string
+  imagePrompt?: string
+  /** Id of the agent run that produced this asset. */
+  runId?: string
 }

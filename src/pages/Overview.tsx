@@ -35,13 +35,13 @@ const ICONS: Record<string, LucideIcon> = {
 
 const OWNER: Record<string, { label: string; cls: string }> = {
   brief: { label: 'People decide', cls: 'bg-amber-500/12 text-amber-700 dark:text-amber-300' },
-  routing: { label: 'Automated', cls: 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300' },
+  routing: { label: 'Automated', cls: 'bg-brand-500/12 text-brand-700 dark:text-brand-300' },
   creation: { label: 'AI + people', cls: 'bg-sky-500/12 text-sky-700 dark:text-sky-300' },
-  qa: { label: 'Automated', cls: 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300' },
+  qa: { label: 'Automated', cls: 'bg-brand-500/12 text-brand-700 dark:text-brand-300' },
   approval: { label: 'People decide', cls: 'bg-amber-500/12 text-amber-700 dark:text-amber-300' },
-  package: { label: 'Automated', cls: 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300' },
-  delivery: { label: 'Automated', cls: 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300' },
-  insights: { label: 'Automated', cls: 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300' },
+  package: { label: 'Automated', cls: 'bg-brand-500/12 text-brand-700 dark:text-brand-300' },
+  delivery: { label: 'Automated', cls: 'bg-brand-500/12 text-brand-700 dark:text-brand-300' },
+  insights: { label: 'Automated', cls: 'bg-brand-500/12 text-brand-700 dark:text-brand-300' },
 }
 
 const NODE_H = 150
@@ -116,7 +116,7 @@ function PipelineFlow({ stages, briefs, assets, journey }: { stages: StageInfo[]
         {edges.map((e) => (
           <path key={e.d} d={e.d} className="stroke-border" strokeWidth={2} fill="none" markerEnd="url(#arrow)" />
         ))}
-        <path d={loop} stroke="#6366f1" strokeOpacity={0.55} strokeWidth={2} strokeDasharray="5 5" fill="none" markerEnd="url(#arrow)">
+        <path d={loop} stroke="#00864f" strokeOpacity={0.55} strokeWidth={2} strokeDasharray="5 5" fill="none" markerEnd="url(#arrow)">
           <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.2s" repeatCount="indefinite" />
         </path>
         {edges.map((e, k) => {
@@ -128,12 +128,12 @@ function PipelineFlow({ stages, briefs, assets, journey }: { stages: StageInfo[]
             </circle>
           ))
         })}
-        <circle r={3.5} fill="#6366f1">
+        <circle r={3.5} fill="#00864f">
           <animateMotion dur="3s" repeatCount="indefinite" path={loop} />
         </circle>
       </svg>
       <div
-        className="absolute rounded-full border border-indigo-500/30 bg-background px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-indigo-600 dark:text-indigo-300"
+        className="absolute rounded-full border border-brand-500/30 bg-background px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-brand-600 dark:text-brand-300"
         style={{ left: 8, top: NODE_H + ROW_GAP / 2 - 13 }}
       >
         ↺ Reuse what was learned and created
@@ -171,8 +171,8 @@ function PipelineFlow({ stages, briefs, assets, journey }: { stages: StageInfo[]
             <div className="mt-auto space-y-1.5">
               {journey === 'all' && (
                 <div className="flex h-1 overflow-hidden rounded-full bg-muted">
-                  <div className="bg-teal-400" style={{ width: `${(sp.rental / total) * 100}%` }} />
-                  <div className="bg-purple-400" style={{ width: `${(sp.shared / total) * 100}%` }} />
+                  <div className="bg-rental-400" style={{ width: `${(sp.rental / total) * 100}%` }} />
+                  <div className="bg-shared-400" style={{ width: `${(sp.shared / total) * 100}%` }} />
                 </div>
               )}
               <div className="flex items-center justify-between gap-2">
@@ -228,8 +228,8 @@ export default function Overview() {
           onChange={setJourney}
           options={[
             { value: 'all', label: 'All journeys' },
-            { value: 'rental', label: <span className="text-teal-600 dark:text-teal-300">Rental</span> },
-            { value: 'shared', label: <span className="text-purple-600 dark:text-purple-300">Shared Ownership</span> },
+            { value: 'rental', label: <span className="text-rental-600 dark:text-rental-300">Rental</span> },
+            { value: 'shared', label: <span className="text-shared-600 dark:text-shared-300">Shared Ownership</span> },
           ]}
         />
       </div>
@@ -260,7 +260,7 @@ export default function Overview() {
       <div className="grid grid-cols-3 gap-5">
         <div className="rounded-xl border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Bot className="size-4 text-indigo-500" /> Automation handles the repeatable
+            <Bot className="size-4 text-brand-500" /> Automation handles the repeatable
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">
             {[
@@ -272,7 +272,7 @@ export default function Overview() {
               ['Measurement', 'live KPIs against baseline'],
             ].map(([k, v]) => (
               <li key={k} className="flex gap-2">
-                <span className="mt-2 size-1 shrink-0 rounded-full bg-indigo-500" />
+                <span className="mt-2 size-1 shrink-0 rounded-full bg-brand-500" />
                 <span>
                   <span className="font-medium text-foreground">{k}</span> — {v}
                 </span>
@@ -321,7 +321,7 @@ export default function Overview() {
         </div>
       </div>
 
-      <Callout className="justify-center border-transparent bg-gradient-to-r from-teal-500/10 via-indigo-500/10 to-purple-500/10 py-3 text-center font-medium">
+      <Callout className="justify-center border-transparent bg-gradient-to-r from-rental-500/10 via-brand-500/10 to-shared-500/10 py-3 text-center font-medium">
         Automate the repeatable. People own the decisions.
       </Callout>
     </div>
