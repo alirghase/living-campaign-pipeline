@@ -16,12 +16,12 @@ export interface JourneyPreset {
 export const journeyPresets: Record<Journey, JourneyPreset> = {
   rental: {
     proposition:
-      'Professionally managed build-to-rent homes. No agency fees, longer tenancies, transparent annual rent reviews and on-site teams.',
+      'Professionally managed, energy-efficient new homes to rent across the UK, backed by Lloyds Banking Group. Rent direct with no agency fees, longer tenancies and an in-house team for repairs.',
     templates: ['Rental Social Kit v4', 'Rental Display Pack v2', 'Rental Email Header v3'],
     tone: 'Warm, direct, confident. Talk about the home and the lifestyle, never the paperwork.',
     toneGuidance: ['Lead with the home, not the landlord', 'Short sentences, second person', 'Name the neighbourhood', 'No "luxury" or "exclusive"'],
-    constraints: ['Rental teal palette only', 'Logo top-left, 8% safe zone', 'Show real availability dates', 'Include holding-deposit line'],
-    keyMessages: ['No agency fees', 'Pet-friendly homes', 'Move in this month', 'On-site team 7 days a week'],
+    constraints: ['Lloyds Living green palette, Rental lime accent', 'Logo top-left, 8% safe zone', 'Show real availability dates', 'Include holding-deposit line'],
+    keyMessages: ['Brand-new, energy-efficient homes', 'Managed by our in-house team', 'No agency fees', 'Pets considered'],
     disclaimer: "Holding deposit equal to one week's rent. Subject to referencing and availability.",
     defaultChannels: ['facebook', 'instagram', 'google', 'email'],
     slaHours: 8,
@@ -29,11 +29,11 @@ export const journeyPresets: Record<Journey, JourneyPreset> = {
   },
   shared: {
     proposition:
-      'Buy a share of a new home (10–75%) and pay rent on the rest. Smaller deposit, lower monthly cost, staircase to full ownership over time.',
+      'Buy a share of a new home (10–75%) and pay rent on the rest. Smaller deposit, lower monthly cost, staircase to full ownership over time. Pathways lets renters move into Shared Ownership when ready.',
     templates: ['Shared Ownership Social Kit v3', 'SO Display Pack v2', 'SO Email Header v2'],
     tone: 'Reassuring, clear, plain English. Explain before you sell; never overpromise affordability.',
     toneGuidance: ['Explain how it works in one line', 'Always show the full monthly cost', 'Avoid "free" or "guaranteed"', 'Plain English over jargon'],
-    constraints: ['Shared Ownership purple palette only', 'Logo top-left, 8% safe zone', 'Eligibility line on every asset', 'Repossession risk disclaimer required'],
+    constraints: ['Lloyds Living green palette, Shared Ownership blue accent', 'Logo top-left, 8% safe zone', 'Eligibility line on every asset', 'Repossession risk disclaimer required'],
     keyMessages: ['Buy a share from 10%', 'Deposits from 5% of your share', 'Staircase to 100%', 'Check eligibility in 2 minutes'],
     disclaimer:
       'Shared Ownership homes are leasehold. Your home may be repossessed if you do not keep up repayments on your mortgage or rent. Eligibility criteria apply.',

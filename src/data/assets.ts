@@ -7,7 +7,7 @@ import { REVIEWER } from './team'
 import type { Asset, AuditEntry, Brief, CheckStatus, FormatId, Review, ReviewType, Tool } from './types'
 
 const TOOLS: Tool[] = ['Firefly', 'Firefly', 'Figma AI', 'Copilot', 'Firefly', 'Figma AI']
-const REVISIONS: Record<Tool, number[]> = { Firefly: [1, 0, 2, 1, 1], 'Figma AI': [1, 2, 1], Copilot: [2, 3, 2] }
+const REVISIONS: Record<Tool, number[]> = { Gemini: [0, 1, 0], Firefly: [1, 0, 2, 1, 1], 'Figma AI': [1, 2, 1], Copilot: [2, 3, 2] }
 const REVIEW_GAP: Record<ReviewType, number> = { brand: 2.6, business: 4.2, risk: 5.1 }
 export const REVIEW_TYPES: ReviewType[] = ['brand', 'business', 'risk']
 

@@ -18,7 +18,7 @@ export const QUARTER_TO_DATE = {
   reuseRate: 0.34,
   firstPassQa: 0.82,
   routineCaught: 0.94,
-  toolRevisions: { Firefly: 1.2, 'Figma AI': 1.6, Copilot: 2.4 },
+  toolRevisions: { Gemini: 0.6, Firefly: 1.2, 'Figma AI': 1.6, Copilot: 2.4 },
   reviewHours: { brand: 3.1, business: 4.8, risk: 5.6 } as Record<ReviewType, number>,
   rentalShare: 0.58,
   funnel: [1, 0.98, 0.92, 0.85, 0.79, 0.76],

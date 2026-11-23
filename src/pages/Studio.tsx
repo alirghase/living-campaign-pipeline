@@ -127,7 +127,7 @@ function AdaptCluster({ brief, assets }: { brief: Brief; assets: Asset[] }) {
               y1="50"
               x2={p.x}
               y2={p.y}
-              stroke={brief.journey === 'rental' ? '#14b8a6' : '#a855f7'}
+              stroke={brief.journey === 'rental' ? '#6fa800' : '#2178b0'}
               strokeOpacity="0.5"
               strokeWidth="1.5"
               strokeDasharray="4 4"
@@ -140,7 +140,7 @@ function AdaptCluster({ brief, assets }: { brief: Brief; assets: Asset[] }) {
         <div
           className={cn(
             'absolute top-1/2 left-1/2 w-64 -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 bg-card p-4 text-center shadow-xl',
-            brief.journey === 'rental' ? 'border-teal-500/60' : 'border-purple-500/60',
+            brief.journey === 'rental' ? 'border-rental-500/60' : 'border-shared-500/60',
           )}
         >
           <div className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Master copy · approved brief</div>
