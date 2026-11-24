@@ -8,8 +8,8 @@
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta'
 
-/** Fallbacks when model discovery is unavailable. Both are long-lived GA model ids. */
-export const DEFAULT_TEXT_MODEL = 'gemini-2.5-flash'
+/** Fallbacks when model discovery is unavailable. `gemini-flash-latest` is Google's rolling alias. */
+export const DEFAULT_TEXT_MODEL = 'gemini-flash-latest'
 export const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 export type AspectRatio = '1:1' | '9:16' | '16:9' | '4:3' | '5:4' | '21:9' | '3:2' | '4:5'
@@ -21,9 +21,16 @@ export interface Usage {
 
 export class GeminiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** Seconds Google asked us to wait (429 RetryInfo). */
+  retryAfter?: number
+  /** The model's quota is used up for the day, or is zero on this tier. Retrying soon won't help. */
+  quotaExhausted?: boolean
+  /** Full error text from Google, for the trace. */
+  raw?: string
+  constructor(message: string, status: number, extra: Partial<Pick<GeminiError, 'retryAfter' | 'quotaExhausted' | 'raw'>> = {}) {
     super(message)
     this.status = status
+    Object.assign(this, extra)
   }
 }
 
@@ -39,11 +46,51 @@ interface GenerateResponse {
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number }
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+interface ApiError {
+  error?: { message?: string; details?: { '@type'?: string; retryDelay?: string }[] }
+}
 
-async function request<T>(key: string, path: string, init: RequestInit = {}, signal?: AbortSignal): Promise<T> {
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const t = setTimeout(resolve, ms)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(t)
+      reject(new DOMException('Aborted', 'AbortError'))
+    })
+  })
+
+function toError(status: number, body: string, model?: string): GeminiError {
+  let raw = body
+  let retryAfter: number | undefined
+  try {
+    const e = (JSON.parse(body) as ApiError).error
+    raw = e?.message ?? body
+    const delay = e?.details?.find((d) => d['@type']?.endsWith('RetryInfo'))?.retryDelay
+    if (delay) retryAfter = parseFloat(delay)
+  } catch {
+    /* keep raw body */
+  }
+  const on = model ? ` on ${model}` : ''
+  if (status === 429) {
+    const zero = /limit: 0\b/.test(raw)
+    const daily = /per day/i.test(raw) && (retryAfter ?? 0) > 120
+    const quotaExhausted = zero || daily || (retryAfter ?? 0) > 120
+    const message = zero
+      ? `Not included in this key's tier${on} (quota 0). Enable billing in Google AI Studio to use it.`
+      : quotaExhausted
+        ? `Daily quota used up${on}. It resets in about ${Math.round((retryAfter ?? 0) / 3600)}h, or enable billing.`
+        : `Rate limited${on} (free tier). Retry in ${Math.ceil(retryAfter ?? 20)}s.`
+    return new GeminiError(message, status, { retryAfter, quotaExhausted, raw })
+  }
+  if (status === 503) return new GeminiError(`Google reports high demand${on}. Try again shortly or use another model.`, status, { raw })
+  if (status === 404) return new GeminiError(`Model not available${on} for this key.`, status, { raw })
+  if (status === 400 && /API key not valid/i.test(raw)) return new GeminiError('API key not valid. Check it in Google AI Studio.', status, { raw })
+  return new GeminiError(raw || `HTTP ${status}`, status, { raw })
+}
+
+async function request<T>(key: string, path: string, init: RequestInit = {}, signal?: AbortSignal, model?: string): Promise<T> {
   let lastErr: unknown
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     let res: Response
     try {
@@ -55,25 +102,99 @@ async function request<T>(key: string, path: string, init: RequestInit = {}, sig
     } catch (e) {
       if ((e as Error).name === 'AbortError') throw e
       lastErr = new GeminiError(`Network error reaching Google AI Studio: ${(e as Error).message}`, 0)
-      await sleep(800 * (attempt + 1))
+      await sleep(800 * (attempt + 1), signal)
       continue
     }
     if (res.ok) return (await res.json()) as T
-    const body = await res.text()
-    let message = body
-    try {
-      message = (JSON.parse(body) as { error?: { message?: string } }).error?.message ?? body
-    } catch {
-      /* keep raw body */
-    }
-    const err = new GeminiError(message || res.statusText, res.status)
-    // Retry only transient failures.
-    if (res.status === 429 || res.status >= 500) {
+    const err = toError(res.status, await res.text(), model)
+    // One quick retry for a plain server error. Overload (503), rate limits and quota go
+    // straight back to the caller, which switches model instead of waiting.
+    if (res.status === 500 && attempt === 0) {
       lastErr = err
-      await sleep(1500 * (attempt + 1))
+      await sleep(1200, signal)
       continue
     }
     throw err
+  }
+  throw lastErr
+}
+
+/*
+ * Model health for this browser: when a model is overloaded, rate-limited, out of quota
+ * or retired, it sits out until it is likely to work again, so later calls go straight
+ * to a model that answers. Persisted so a daily quota stays remembered across reloads.
+ */
+const HEALTH_KEY = 'lloyds-living-model-health'
+const health: Map<string, number> = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HEALTH_KEY) ?? '{}') as Record<string, number>
+    return new Map(Object.entries(raw).filter(([, until]) => until > Date.now()))
+  } catch {
+    return new Map()
+  }
+})()
+
+function benchModel(model: string, e: GeminiError) {
+  const sec = e.status === 404 ? 6 * 3600 : e.status === 429 ? (e.quotaExhausted ? Math.max(e.retryAfter ?? 0, 3600) : (e.retryAfter ?? 20)) : 90
+  health.set(model, Date.now() + sec * 1000)
+  try {
+    localStorage.setItem(HEALTH_KEY, JSON.stringify(Object.fromEntries(health)))
+  } catch {
+    /* private mode */
+  }
+}
+
+/** Forget remembered model problems (e.g. after enabling billing). */
+export function resetModelHealth() {
+  health.clear()
+  try {
+    localStorage.removeItem(HEALTH_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Healthy models first, in preference order; briefly benched ones after; long-benched ones only as a last resort. */
+function healthOrder(models: string[]) {
+  const now = Date.now()
+  const until = (m: string) => health.get(m) ?? 0
+  const ok = models.filter((m) => until(m) <= now)
+  const soon = models.filter((m) => until(m) > now && until(m) - now < 60_000).sort((a, b) => until(a) - until(b))
+  const later = models.filter((m) => until(m) - now >= 60_000)
+  return ok.length + soon.length ? [...ok, ...soon] : later
+}
+
+/** Errors worth trying the next model for. Bad requests and bad keys are not. */
+const switchable = (e: unknown) => e instanceof GeminiError && (e.status === 429 || e.status === 404 || e.status >= 500 || e.status === 0)
+
+/**
+ * Try each model in turn. Free-tier quotas are per model, so rotating spreads the
+ * load. If every model is only briefly rate-limited, wait as long as Google asks
+ * (capped) and go round once more.
+ */
+export async function withModels<T>(
+  models: string[],
+  fn: (model: string) => Promise<T>,
+  opts: { signal?: AbortSignal; onSwitch?: (from: string, to: string, why: GeminiError) => void } = {},
+): Promise<{ result: T; model: string }> {
+  let lastErr: unknown
+  for (let round = 0; round < 2; round++) {
+    const list = healthOrder([...new Set(models.filter(Boolean))])
+    let wait = 0
+    for (let i = 0; i < list.length; i++) {
+      try {
+        return { result: await fn(list[i]), model: list[i] }
+      } catch (e) {
+        if (!switchable(e)) throw e
+        lastErr = e
+        const ge = e as GeminiError
+        benchModel(list[i], ge)
+        if (ge.status === 429 && !ge.quotaExhausted) wait = Math.max(wait, ge.retryAfter ?? 20)
+        if (i + 1 < list.length) opts.onSwitch?.(list[i], list[i + 1], ge)
+      }
+    }
+    if (!wait) break
+    await sleep(Math.min(wait, 30) * 1000, opts.signal)
   }
   throw lastErr
 }
@@ -142,42 +263,49 @@ const versionOf = (id: string) => {
 
 const NOT_TEXT = /(image|tts|audio|live|embedding|vision|aqa|learnlm|robotics|computer|native|thinking-exp|lite-preview-0|gemma|veo|imagen|nano-banana)/i
 
-/** Pick the newest fast text model and the newest image model the key can use. */
+const isPreview = (id: string) => /preview|exp/.test(id)
+
+/** Rank the text and image models the key can use: newest first, stable before preview. */
 export function pickModels(models: ModelInfo[]) {
   const gen = models.filter((m) => m.methods.includes('generateContent'))
   const text = gen
     .filter((m) => /^gemini-[\d.]+-flash/.test(m.id) && !NOT_TEXT.test(m.id))
     .sort((a, b) => {
-      const penalty = (id: string) => (id.includes('preview') || id.includes('exp') ? 1 : 0) + (id.includes('lite') ? 2 : 0)
+      const penalty = (id: string) => (isPreview(id) ? 1 : 0) + (id.includes('lite') ? 2 : 0)
       return versionOf(b.id) - versionOf(a.id) || penalty(a.id) - penalty(b.id)
     })
+    .map((m) => m.id)
+  if (gen.some((m) => m.id === 'gemini-flash-latest')) text.push('gemini-flash-latest')
   const image = gen
-    .filter((m) => /(flash-image|pro-image|nano-banana)/i.test(m.id))
+    .filter((m) => /(flash-image|pro-image|nano-banana)/i.test(m.id) && !/lite/.test(m.id))
     .sort((a, b) => {
-      const flash = (id: string) => (/flash|nano-banana/.test(id) ? 1 : 0)
-      return flash(b.id) - flash(a.id) || versionOf(b.id) - versionOf(a.id)
+      const flash = (id: string) => (/flash|nano-banana-2/.test(id) ? 1 : 0)
+      return Number(isPreview(a.id)) - Number(isPreview(b.id)) || flash(b.id) - flash(a.id) || versionOf(b.id) - versionOf(a.id)
     })
-  return {
-    text: text.map((m) => m.id),
-    image: image.map((m) => m.id),
-  }
+    .map((m) => m.id)
+  return { text, image }
 }
 
-export interface JsonCall<T> {
+interface Rotation {
   key: string
-  model: string
+  /** Preferred model first; the rest are tried in order if it is overloaded, retired or rate-limited. */
+  models: string[]
+  signal?: AbortSignal
+  onSwitch?: (from: string, to: string, why: GeminiError) => void
+}
+
+export interface JsonCall<T> extends Rotation {
   system: string
   prompt: string
   schema?: Record<string, unknown>
   images?: string[]
   temperature?: number
-  signal?: AbortSignal
   /** Only for typing. */
   _t?: T
 }
 
-/** Structured generation: returns parsed JSON plus token usage. */
-export async function generateJson<T>(c: JsonCall<T>): Promise<{ data: T; usage: Usage }> {
+/** Structured generation: returns parsed JSON, token usage and the model that answered. */
+export async function generateJson<T>(c: JsonCall<T>): Promise<{ data: T; usage: Usage; model: string }> {
   const parts: Part[] = [{ text: c.prompt }]
   for (const img of c.images ?? []) {
     const p = toInlineData(img)
@@ -192,33 +320,33 @@ export async function generateJson<T>(c: JsonCall<T>): Promise<{ data: T; usage:
       ...(withSchema && c.schema ? { responseSchema: c.schema } : {}),
     },
   })
-  let r: GenerateResponse
-  try {
-    r = await request<GenerateResponse>(c.key, `/models/${c.model}:generateContent`, { method: 'POST', body: JSON.stringify(body(true)) }, c.signal)
-  } catch (e) {
-    // Some models reject responseSchema; retry once relying on the prompt alone.
-    if (e instanceof GeminiError && e.status === 400 && /schema/i.test(e.message)) {
-      r = await request<GenerateResponse>(c.key, `/models/${c.model}:generateContent`, { method: 'POST', body: JSON.stringify(body(false)) }, c.signal)
-    } else throw e
+  const call = async (model: string) => {
+    const post = (withSchema: boolean) =>
+      request<GenerateResponse>(c.key, `/models/${model}:generateContent`, { method: 'POST', body: JSON.stringify(body(withSchema)) }, c.signal, model)
+    try {
+      return await post(true)
+    } catch (e) {
+      // Some models reject responseSchema; retry once relying on the prompt alone.
+      if (e instanceof GeminiError && e.status === 400 && /schema/i.test(e.raw ?? e.message)) return post(false)
+      throw e
+    }
   }
+  const { result: r, model } = await withModels(c.models, call, c)
   const text = partsOf(r)
     .map((p) => p.text ?? '')
     .join('')
-  return { data: parseJson<T>(text), usage: usageOf(r) }
+  return { data: parseJson<T>(text), usage: usageOf(r), model }
 }
 
-export interface ImageCall {
-  key: string
-  model: string
+export interface ImageCall extends Rotation {
   prompt: string
   aspectRatio: AspectRatio
   /** Reference images (data URLs) so adaptations stay consistent with the key visual. */
   references?: string[]
-  signal?: AbortSignal
 }
 
-/** Image generation ("Nano Banana" family). Returns a data: URL. */
-export async function generateImage(c: ImageCall): Promise<{ image: string; note?: string; usage: Usage }> {
+/** Image generation ("Nano Banana" family). Returns a data: URL and the model that answered. */
+export async function generateImage(c: ImageCall): Promise<{ image: string; note?: string; usage: Usage; model: string }> {
   const parts: Part[] = [{ text: c.prompt }]
   for (const ref of c.references ?? []) {
     const p = toInlineData(ref)
@@ -231,14 +359,17 @@ export async function generateImage(c: ImageCall): Promise<{ image: string; note
       ...(withRatio ? { imageConfig: { aspectRatio: c.aspectRatio } } : {}),
     },
   })
-  let r: GenerateResponse
-  try {
-    r = await request<GenerateResponse>(c.key, `/models/${c.model}:generateContent`, { method: 'POST', body: JSON.stringify(body(true)) }, c.signal)
-  } catch (e) {
-    if (e instanceof GeminiError && e.status === 400 && /(imageConfig|aspect)/i.test(e.message)) {
-      r = await request<GenerateResponse>(c.key, `/models/${c.model}:generateContent`, { method: 'POST', body: JSON.stringify(body(false)) }, c.signal)
-    } else throw e
+  const call = async (model: string) => {
+    const post = (withRatio: boolean) =>
+      request<GenerateResponse>(c.key, `/models/${model}:generateContent`, { method: 'POST', body: JSON.stringify(body(withRatio)) }, c.signal, model)
+    try {
+      return await post(true)
+    } catch (e) {
+      if (e instanceof GeminiError && e.status === 400 && /(imageConfig|aspect)/i.test(e.raw ?? e.message)) return post(false)
+      throw e
+    }
   }
+  const { result: r, model } = await withModels(c.models, call, c)
   const ps = partsOf(r)
   const img = ps.find((p) => p.inlineData?.data || p.inline_data?.data)
   const note = ps
@@ -248,5 +379,5 @@ export async function generateImage(c: ImageCall): Promise<{ image: string; note
   if (!img) throw new GeminiError(`No image returned${note ? `: ${note.slice(0, 160)}` : ''}`, 200)
   const mime = img.inlineData?.mimeType ?? img.inline_data?.mime_type ?? 'image/png'
   const data = img.inlineData?.data ?? img.inline_data?.data
-  return { image: `data:${mime};base64,${data}`, note: note || undefined, usage: usageOf(r) }
+  return { image: `data:${mime};base64,${data}`, note: note || undefined, usage: usageOf(r), model }
 }

@@ -1,8 +1,8 @@
 import type { ReviewType, TeamMember } from './types'
 
 export const team: TeamMember[] = [
-  { id: 't1', name: 'Priya Shah', initials: 'PS', role: 'Campaign Lead', color: '#00864f' },
-  { id: 't2', name: 'Tom Hughes', initials: 'TH', role: 'Brand Manager', color: '#2178b0' },
+  { id: 't1', name: 'Priya Shah', initials: 'PS', role: 'Campaign Lead', color: '#006c4e' },
+  { id: 't2', name: 'Tom Hughes', initials: 'TH', role: 'Brand Manager', color: '#5a57a3' },
   { id: 't3', name: 'Amara Okafor', initials: 'AO', role: 'Business Reviewer', color: '#c27803' },
   { id: 't4', name: 'Daniel Reid', initials: 'DR', role: 'Risk Officer', color: '#dc2a4d' },
   { id: 't5', name: 'Sofia Marin', initials: 'SM', role: 'Content Designer', color: '#b4407a' },

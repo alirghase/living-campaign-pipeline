@@ -116,7 +116,7 @@ function PipelineFlow({ stages, briefs, assets, journey }: { stages: StageInfo[]
         {edges.map((e) => (
           <path key={e.d} d={e.d} className="stroke-border" strokeWidth={2} fill="none" markerEnd="url(#arrow)" />
         ))}
-        <path d={loop} stroke="#00864f" strokeOpacity={0.55} strokeWidth={2} strokeDasharray="5 5" fill="none" markerEnd="url(#arrow)">
+        <path d={loop} stroke="#11b67a" strokeOpacity={0.55} strokeWidth={2} strokeDasharray="5 5" fill="none" markerEnd="url(#arrow)">
           <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.2s" repeatCount="indefinite" />
         </path>
         {edges.map((e, k) => {
@@ -128,7 +128,7 @@ function PipelineFlow({ stages, briefs, assets, journey }: { stages: StageInfo[]
             </circle>
           ))
         })}
-        <circle r={3.5} fill="#00864f">
+        <circle r={3.5} fill="#11b67a">
           <animateMotion dur="3s" repeatCount="indefinite" path={loop} />
         </circle>
       </svg>

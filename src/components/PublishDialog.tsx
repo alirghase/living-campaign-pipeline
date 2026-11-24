@@ -44,7 +44,7 @@ export function PublishDialog({ assets, onClose }: { assets: Asset[]; onClose: (
       window.setTimeout(() => {
         publish(ids)
         setDone(true)
-        confetti({ particleCount: 90, spread: 70, startVelocity: 32, origin: { y: 0.6 }, colors: ['#00864f', '#77ba00', '#2178b0', '#ffffff'] })
+        confetti({ particleCount: 90, spread: 70, startVelocity: 32, origin: { y: 0.6 }, colors: ['#11b67a', '#6cf579', '#9e9ce1', '#006c4e', '#ffffff'] })
       }, targets.length * 450 + 900),
     )
     // Timers are left to finish so the publish always lands, even if the dialog closes.

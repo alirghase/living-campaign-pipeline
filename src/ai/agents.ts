@@ -18,7 +18,7 @@ import type { Brief, Channel, CheckResult, FormatId, Journey, Priority, QaState 
 import { CHECK_LABELS } from '@/data/checks'
 import { BANNED, BRAND, brandContext, JOURNEY_LEAKS } from './brand'
 import { EXAMPLES } from './examples'
-import { generateImage, generateJson, type AspectRatio, type Usage } from './gemini'
+import { GeminiError, generateImage, generateJson, type AspectRatio, type Usage } from './gemini'
 
 export type AgentId = 'strategist' | 'router' | 'copywriter' | 'artdirector' | 'imager' | 'qa' | 'human'
 
@@ -130,6 +130,10 @@ export interface Run {
   models: { text: string; image: string }
   error?: string
   briefId?: string
+  /** Why live image generation is unavailable on this key, if it is. */
+  imageBlocked?: string
+  /** True when the key visual was uploaded by a person rather than generated. */
+  uploadedVisual?: boolean
 }
 
 /** What the orchestrator needs from the store. */
@@ -137,6 +141,8 @@ export interface RunContext {
   live: boolean
   key: string
   models: { text: string; image: string }
+  /** Other models on the key, tried in order when the preferred one is overloaded or out of quota. */
+  fallbacks: { text: string[]; image: string[] }
   signal: AbortSignal
   get: () => Run
   patch: (fn: (r: Run) => Partial<Run>) => void
@@ -206,6 +212,14 @@ const S = {
 
 const CHANNELS: Channel[] = ['instagram', 'facebook', 'linkedin', 'google', 'email']
 
+const route = (ctx: RunContext, agent: AgentId, kind: 'text' | 'image') => ({
+  key: ctx.key,
+  models: [ctx.models[kind], ...ctx.fallbacks[kind]],
+  signal: ctx.signal,
+  onSwitch: (_from: string, to: string, why: GeminiError) => ctx.log(agent, 'warn', `${why.message} Switching to ${to}.`, why.raw),
+})
+
+
 /* ------------------------------------------------------------------ */
 /* 1. Brief Strategist                                                 */
 /* ------------------------------------------------------------------ */
@@ -217,9 +231,16 @@ function demoBrief(input: string, exampleId?: string): StructuredBrief {
   }
   const lower = input.toLowerCase()
   const journey: Journey = /(shared ownership|own a share|buy a share|pathways|staircas|mortgage)/.test(lower) ? 'shared' : 'rental'
-  const dev = ['Oxenden Park, Herne Bay', 'Hampton Beach, Peterborough', 'Burleyfields, Stafford', 'Frog Island, Leicester', 'Warren Wood, Gainsborough', 'Gedling', 'Gaydon, Warwickshire'].find((d) =>
-    lower.includes(d.split(',')[0].toLowerCase()),
-  )
+  const dev = [
+    'Lapwings, Burleyfields, Stafford',
+    'Osprey View, Worksop',
+    'Park View, Gedling',
+    'Warren Wood View, Gainsborough',
+    'Oxenden Park, Herne Bay',
+    'Hampton Beach, Peterborough',
+    'Frog Island, Leicester',
+    'Gaydon, Warwickshire',
+  ].find((d) => d.split(',').some((part) => lower.includes(part.trim().toLowerCase())))
   const channels = CHANNELS.filter((c) => lower.includes(c === 'google' ? 'display' : c))
   const first = input.split(/[.\n]/)[0].trim()
   return {
@@ -244,9 +265,7 @@ async function strategist(ctx: RunContext): Promise<StructuredBrief> {
     try {
       ctx.log('strategist', 'tool', `gemini.generateContent · ${ctx.models.text} · schema=StructuredBrief`)
       const { data, usage } = await generateJson<StructuredBrief>({
-        key: ctx.key,
-        model: ctx.models.text,
-        signal: ctx.signal,
+                ...route(ctx, 'strategist', 'text'),
         temperature: 0.4,
         system: `You are the Brief Strategist agent in the ${BRAND.name} marketing team. Turn a marketer's free-text request into a structured, approval-ready creative brief. Be specific and measurable. Keep every field short.\n${brandContext()}`,
         prompt: `RAW REQUEST:\n"""${run.input}"""\n\nRules:\n- name: campaign name, max 40 characters.\n- journey: "rental" for private renting, "shared" for Shared Ownership (including Pathways, rent-to-own).\n- development: the named site and town if given.\n- objective: one measurable sentence.\n- insight: one human truth about the audience.\n- keyMessages: exactly 3, each under 45 characters.\n- masterHeadline: under 45 characters, warm and specific.\n- tone: under 15 words.\n- channels: only those requested; default to instagram, facebook, email.\n- priority: High, Medium or Low.`,
@@ -296,9 +315,7 @@ async function router(ctx: RunContext, brief: StructuredBrief): Promise<Routing>
     try {
       ctx.log('router', 'tool', `gemini.generateContent · ${ctx.models.text} · schema=RoutingDecision`)
       const { data, usage } = await generateJson<Pick<Routing, 'journey' | 'confidence' | 'rationale' | 'signals'>>({
-        key: ctx.key,
-        model: ctx.models.text,
-        signal: ctx.signal,
+                ...route(ctx, 'router', 'text'),
         temperature: 0.1,
         system: `You are the Journey Router agent at ${BRAND.name}. Decide which journey team owns a brief: "rental" (private rent) or "shared" (Shared Ownership, including Pathways rent-to-own routes). Each has its own templates, disclaimers and approvers, so getting it wrong is a compliance risk.`,
         prompt: `BRIEF:\n${JSON.stringify(brief, null, 2)}\n\nReturn the journey, your confidence (0 to 1), a rationale under 25 words, and up to 3 short signal phrases you relied on.`,
@@ -368,7 +385,7 @@ function demoCopy(b: StructuredBrief, routing: Routing): CopyOut[] {
     const c = generateCopy(brief, f, i)
     const headlines = [b.masterHeadline, ...c.headlines.filter((h) => h !== b.masterHeadline)].slice(0, 3)
     // First drafts are not perfect: the tightest format gets an over-long line so QA has something to catch.
-    if (f === shortest) headlines[0] = `${b.masterHeadline.replace(/[.!]$/, '')} in ${area}`
+    if (f === shortest) headlines[0] = `${b.masterHeadline.replace(/[.!?]$/, '')}: brand-new homes in ${area}`
     return { format: f, headlines, body: c.body, cta: c.cta, rationale: 'Leads with the master headline; alternates test the key messages.' }
   })
 }
@@ -382,9 +399,7 @@ async function copywriter(ctx: RunContext, b: StructuredBrief, routing: Routing)
         .join('\n')
       ctx.log('copywriter', 'tool', `gemini.generateContent · ${ctx.models.text} · schema=ChannelCopy[${routing.formats.length}]`)
       const { data, usage } = await generateJson<{ creatives: CopyOut[] }>({
-        key: ctx.key,
-        model: ctx.models.text,
-        signal: ctx.signal,
+                ...route(ctx, 'copywriter', 'text'),
         temperature: 0.85,
         system: `You are the Copywriter agent at ${BRAND.name}. You adapt one approved brief into channel-native copy. Every headline must respect its character limit. Never write the legal disclaimer, the layout adds it.\n${brandContext(routing.journey)}`,
         prompt: `BRIEF:\n${JSON.stringify(b, null, 2)}\n\nFORMATS:\n${specs}\n\nFor each format return 3 distinct headline options (the first is your recommendation), a body line, a CTA and a one-line rationale. Short formats need punchier lines. Name the place where it helps.`,
@@ -412,9 +427,7 @@ async function reviseCopy(ctx: RunContext, b: StructuredBrief, journey: Journey,
     try {
       ctx.log('copywriter', 'tool', `gemini.generateContent · revise ${formats[c.format].short}`)
       const { data, usage } = await generateJson<Pick<RunCreative, 'headlines' | 'body' | 'cta'>>({
-        key: ctx.key,
-        model: ctx.models.text,
-        signal: ctx.signal,
+                ...route(ctx, 'copywriter', 'text'),
         temperature: 0.6,
         system: `You are the Copywriter agent at ${BRAND.name}. QA sent your copy back. Fix exactly the issues listed and keep what worked.\n${brandContext(journey)}`,
         prompt: `FORMAT: ${formats[c.format].label}. Headline hard max ${max} chars (aim ${HEADLINE_AIM[c.format]}). Body ≤ 140 chars. CTA ≤ 22 chars.\nBRIEF KEY MESSAGES: ${b.keyMessages.join('; ')}\nCURRENT: ${JSON.stringify({ headlines: c.headlines, body: c.body, cta: c.cta })}\nQA ISSUES: ${issues.join('; ')}\nReturn 3 corrected headlines, body and CTA.`,
@@ -440,13 +453,14 @@ async function reviseCopy(ctx: RunContext, b: StructuredBrief, journey: Journey,
 /* ------------------------------------------------------------------ */
 
 function demoArt(b: StructuredBrief, journey: Journey): ArtDirection {
-  const people = journey === 'shared' ? 'a young couple' : /famil/i.test(b.audience) ? 'a young family with a dog' : 'a couple in their thirties'
-  const scene = `${people} arriving home to a brand-new red-brick semi-detached house at ${b.development}, front garden with young trees, soft late-afternoon sun, candid moment at the front door.`
+  const family = /famil|child|growing/i.test(`${b.audience} ${b.masterHeadline}`)
+  const people = journey === 'shared' ? 'a young couple' : family ? 'a young family with two children' : 'a couple in their thirties with a dog'
+  const scene = `Straight-on, eye-level view of a brand-new buff-brick semi-detached house at ${b.development}, sage-green front door, fresh lawn and tarmac drive under a clear blue sky; ${people} arriving home, candid and smiling.`
   return {
-    concept: `"${b.masterHeadline}": the first evening in a new home.`,
+    concept: `"${b.masterHeadline}": the first day of a new chapter.`,
     scene,
-    mood: 'Warm, calm, optimistic. Natural light, true colour, subtle greens.',
-    masterPrompt: `Editorial lifestyle photograph for a UK housing brand. ${scene} Shot on a 35mm lens at eye level, shallow depth of field, natural daylight, true-to-life colour grade with subtle greens. Clean sky and negative space for a headline.`,
+    mood: 'Bright, optimistic, real. Clear daylight, true colour.',
+    masterPrompt: `Bright UK daylight photograph for a housing brand's social feed. ${scene} Shot on a 28mm lens at eye level, crisp natural colour, clear sky with room for a headline panel at the top.`,
   }
 }
 
@@ -456,9 +470,7 @@ async function artDirector(ctx: RunContext, b: StructuredBrief, journey: Journey
     try {
       ctx.log('artdirector', 'tool', `gemini.generateContent · ${ctx.models.text} · schema=ArtDirection`)
       const { data, usage } = await generateJson<ArtDirection>({
-        key: ctx.key,
-        model: ctx.models.text,
-        signal: ctx.signal,
+                ...route(ctx, 'artdirector', 'text'),
         temperature: 0.9,
         system: `You are the Art Director agent at ${BRAND.name}. You define one key visual that will be re-framed for every channel, so it needs a clear subject, a simple background and room for type.\nART DIRECTION RULES:\n- ${BRAND.artDirection.join('\n- ')}\n${brandContext(journey)}`,
         prompt: `BRIEF:\n${JSON.stringify(b, null, 2)}\n\nReturn: concept (under 20 words), scene (under 60 words: who, where, what they are doing, time of day), mood (under 15 words), masterPrompt (under 120 words, a complete photographic prompt for an image model, describing camera, light and composition, with clean negative space in the upper third for a headline). Do not ask for any text in the image.`,
@@ -503,7 +515,7 @@ export function adaptPromptFor(art: ArtDirection, aspect: AspectRatio) {
 
 async function paint(ctx: RunContext, prompt: string, aspect: AspectRatio, references?: string[]): Promise<string | undefined> {
   ctx.log('imager', 'tool', `gemini.generateContent · ${ctx.models.image} · aspectRatio=${aspect}${references?.length ? ' · reference=key visual' : ''}`, { prompt })
-  const { image, usage } = await generateImage({ key: ctx.key, model: ctx.models.image, prompt, aspectRatio: aspect, references, signal: ctx.signal })
+  const { image, usage } = await generateImage({ ...route(ctx, 'imager', 'image'), prompt, aspectRatio: aspect, references })
   ctx.usage(usage, true)
   return image
 }
@@ -537,7 +549,9 @@ async function imager(ctx: RunContext, art: ArtDirection) {
     ctx.log('imager', 'result', `Key visual ready (${master}).`)
   } catch (e) {
     if (isAbort(e)) throw e
-    ctx.log('imager', 'warn', `Image model unavailable, using the brand illustration instead: ${(e as Error).message}`)
+    const why = (e as Error).message
+    ctx.log('imager', 'warn', `No image model available, using the brand illustration instead. ${why}`, (e as GeminiError).raw)
+    ctx.patch(() => ({ imageBlocked: why }))
     ctx.patch((r) => ({ creatives: r.creatives.map((c) => ({ ...c, status: 'checking' })) }))
     return
   }
@@ -638,9 +652,7 @@ async function vision(ctx: RunContext, c: RunCreative, b: StructuredBrief, journ
   }
   try {
     const { data, usage } = await generateJson<Vision>({
-      key: ctx.key,
-      model: ctx.models.text,
-      signal: ctx.signal,
+            ...route(ctx, 'qa', 'text'),
       temperature: 0.1,
       images: c.image ? [c.image] : [],
       system: `You are the Brand & Compliance QA agent at ${BRAND.name}. You are strict but fair. Score honestly.\nART DIRECTION:\n- ${BRAND.artDirection.join('\n- ')}\n${brandContext(journey)}`,
@@ -763,7 +775,7 @@ export async function runPipeline(ctx: RunContext) {
       ctx.log('qa', 'thought', 'Running 8 checks per asset: format, palette, logo, journey, length, claims & disclaimer, tone, brief.')
       await pool(
         ctx.get().creatives.map((c) => c.format),
-        3,
+        ctx.live ? 2 : 3,
         (f) => qaOne(ctx, f, finalBrief, routing, art),
       )
       return ctx.get().creatives
@@ -781,14 +793,34 @@ export async function runPipeline(ctx: RunContext) {
 /* Human-directed image refinement ("make it golden hour")             */
 /* ------------------------------------------------------------------ */
 
-export async function refineImage(opts: { key: string; model: string; image: string; instruction: string; aspect: AspectRatio; signal?: AbortSignal }) {
+export async function refineImage(opts: { key: string; models: string[]; image: string; instruction: string; aspect: AspectRatio; signal?: AbortSignal }) {
   const { image } = await generateImage({
     key: opts.key,
-    model: opts.model,
+    models: opts.models,
     aspectRatio: opts.aspect,
     references: [opts.image],
     signal: opts.signal,
     prompt: `Edit the reference photograph: ${opts.instruction}. Keep the same homes, people, framing and colour grade unless the instruction says otherwise. ${GUARDRAILS}`,
   })
   return image
+}
+
+/** Re-run Brand & Compliance QA on every asset, e.g. after a person uploads a key visual. */
+export async function recheckQa(ctx: RunContext) {
+  const r = ctx.get()
+  if (!r.brief || !r.routing || !r.art) return
+  const brief = r.brief
+  const routing = r.routing
+  const art = r.art
+  ctx.step('qa', { status: 'running', startedAt: Date.now(), endedAt: undefined })
+  ctx.log('qa', 'start', 'Re-checking every asset against brand, legal and brief with the new key visual')
+  await pool(
+    r.creatives.map((c) => c.format),
+    ctx.live ? 2 : 3,
+    (f) => qaOne(ctx, f, brief, routing, art),
+  )
+  const cs = ctx.get().creatives
+  const s = `${cs.filter((c) => c.qaState !== 'fail').length}/${cs.length} cleared with the new visual`
+  ctx.step('qa', { status: 'done', endedAt: Date.now(), summary: s })
+  ctx.log('qa', 'done', s)
 }

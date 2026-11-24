@@ -8,6 +8,7 @@ import { ChannelIcons, JourneyPill, MemberAvatar, Segmented } from '@/components
 import { AgentRail, AGENT_ICON, AGENT_TINT } from '@/components/agent/AgentRail'
 import { AiSettingsDialog, AiStatusChip } from '@/components/agent/AiSettingsDialog'
 import { CreativeCard } from '@/components/agent/CreativeCard'
+import { KeyVisual } from '@/components/agent/KeyVisual'
 import { Trace } from '@/components/agent/Trace'
 import { REVIEWER } from '@/data/team'
 import { AGENTS } from '@/ai/agents'
@@ -30,28 +31,31 @@ function Hero({ children }: { children?: ReactNode }) {
   const settings = useAiSettings()
   const live = isLive(settings)
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-brand-900 text-white">
-      <svg className="pointer-events-none absolute -top-10 -right-10 h-[140%] opacity-[0.09]" viewBox="0 0 400 400" aria-hidden>
-        <path d="M40 200 200 60l160 140v160H40z" fill="none" stroke="#fff" strokeWidth="18" strokeLinejoin="round" />
-        <path d="M150 360V260h100v100" fill="#77ba00" />
+    <section className="relative overflow-hidden rounded-3xl bg-brand-700 text-white">
+      <svg className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[46%] md:block" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden>
+        <path d="M160 0C90 90 230 170 130 260C70 315 120 360 90 400H600V0Z" fill="#11b67a" />
+        <path d="M160 0C90 90 230 170 130 260C70 315 120 360 90 400H112C142 360 92 315 152 260C252 170 112 90 182 0Z" fill="#6cf579" />
+        <path d="M260 0C210 80 330 160 260 250C220 300 260 360 240 400H600V0Z" fill="#c8ffc5" opacity=".22" />
       </svg>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,rgba(119,186,0,0.22),transparent_55%)]" />
       <div className="relative flex flex-col gap-6 p-7 lg:flex-row lg:items-end lg:p-9">
         <div className="max-w-2xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-lime ring-1 ring-white/15">
-            <Sparkles className="size-3.5" /> Campaign Agent · built on Google Gemini
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-lime ring-1 ring-white/15">
+              <Sparkles className="size-3.5" /> Campaign Agent · built on Google Gemini
+            </span>
+            <span className="inline-block -rotate-2 rounded-lg bg-[#11b67a] px-2.5 py-1 text-xs font-extrabold text-[#000d04] shadow-md">Built for life&rsquo;s next chapter.</span>
           </div>
-          <h1 className="text-3xl leading-[1.05] font-bold tracking-tight text-balance lg:text-[2.6rem]">One brief in. A whole campaign out.</h1>
+          <h1 className="text-3xl leading-[1.02] font-extrabold tracking-tight text-balance lg:text-[2.8rem]">One brief in. A whole campaign out.</h1>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/80">
             Six specialist agents structure the brief, route it, write the copy, art-direct, generate the photography and check every asset against brand and compliance.{' '}
             <span className="font-semibold text-white">People make every decision that matters.</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto lg:justify-end">
-          <AiStatusChip className={cn(live ? 'bg-white/12 text-lime ring-white/20' : 'bg-amber-400/15 text-amber-200 ring-amber-300/30')} />
-          {live && <span className="font-mono text-[11px] text-white/60">{settings.imageModel}</span>}
+          <AiStatusChip className={cn(live ? 'bg-black/25 text-lime ring-white/20' : 'bg-black/25 text-amber-200 ring-amber-300/30')} />
+          {live && <span className="rounded bg-black/25 px-1.5 py-0.5 font-mono text-[11px] text-white/80">{settings.imageModel}</span>}
           <AiSettingsDialog>
-            <Button size="lg" className="bg-white text-brand-900 hover:bg-white/90">
+            <Button size="lg" className="bg-black text-white shadow-[0_0_0_3px_#6cf579] hover:bg-black/85">
               <Settings2 /> {live ? 'AI settings' : 'Connect Google AI Studio'}
             </Button>
           </AiSettingsDialog>
@@ -302,12 +306,7 @@ function RunView() {
             </Panel>
             <Panel title="Creative concept" icon={<AgentIconSmall id="artdirector" />}>
               {run.art ? (
-                <div className="space-y-2 text-[13px]">
-                  <p className="text-[15px] leading-tight font-semibold">{run.art.concept}</p>
-                  <p className="text-xs leading-snug text-muted-foreground">{run.art.scene}</p>
-                  {run.masterImage && <img src={run.masterImage} alt="Key visual" className="aspect-video w-full rounded-lg object-cover ring-1 ring-black/10" />}
-                  <p className="border-t pt-2 text-xs text-muted-foreground italic">{run.art.mood}</p>
-                </div>
+                <KeyVisual run={run} />
               ) : (
                 <Skel />
               )}
@@ -331,7 +330,7 @@ function RunView() {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {run.creatives.map((c) => (
-                  <CreativeCard key={c.format} c={c} journey={run.routing!.journey} seed={run.id} view={view} locked={locked} />
+                  <CreativeCard key={c.format} c={c} journey={run.routing!.journey} seed={run.id} view={view} locked={locked} location={run.brief?.development} />
                 ))}
               </div>
             </div>
@@ -413,7 +412,7 @@ export default function Agent() {
             }
           }}
         />
-        <Button size="lg" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" onClick={() => fileRef.current?.click()} title="Load a run saved earlier">
+        <Button size="lg" variant="ghost" className="bg-black/20 text-white hover:bg-black/30 hover:text-white" onClick={() => fileRef.current?.click()} title="Load a run saved earlier">
           <FileUp /> Load saved run
         </Button>
       </Hero>

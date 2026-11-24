@@ -7,59 +7,62 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Lloyds Living design tokens.
- * Palette sampled from the Lloyds Banking Group web estate:
- *   Lloyds green #00864f, deep green #00553e / #004a36, lime #77ba00 / #649c00,
- *   Lloyds blue #2178b0 / #0d5595, warm stone #efedea, ink #1a1a1a.
- * brand-*  = Lloyds green (UI primary)
- * rental-* = lime (Rental journey)
- * shared-* = Lloyds blue (Shared Ownership journey)
+ * Lloyds Living design tokens, sampled from the @lloydsliving Instagram feed:
+ *   bright green #11b67a (panels, location pills), dark green #006c4e (Lapwings panels),
+ *   neon mint #6cf579 (highlights, arrow rings), pale mint #c8ffc5 (swooshes),
+ *   lavender #9e9ce1 (icon circles), near-black ink #000d04.
+ * brand-*  = Lloyds Living greens (UI primary is brand-700 #006c4e)
+ * rental-* = bright green (Rental journey)
+ * shared-* = lavender (Shared Ownership journey)
  */
 @theme inline {
-    --color-brand-50: #ebf7f1;
-    --color-brand-100: #cdeedd;
-    --color-brand-200: #9fdcbf;
-    --color-brand-300: #5ec59a;
-    --color-brand-400: #22a774;
-    --color-brand-500: #00864f;
-    --color-brand-600: #007345;
-    --color-brand-700: #005c3c;
-    --color-brand-800: #004a36;
-    --color-brand-900: #003d2d;
+    --color-brand-50: #e8f8f0;
+    --color-brand-100: #c8f0dc;
+    --color-brand-200: #8fe0bb;
+    --color-brand-300: #4fcb96;
+    --color-brand-400: #11b67a;
+    --color-brand-500: #009a66;
+    --color-brand-600: #007f57;
+    --color-brand-700: #006c4e;
+    --color-brand-800: #00553e;
+    --color-brand-900: #003f2e;
     --color-brand-950: #00261c;
 
-    --color-rental-50: #f4f9ea;
-    --color-rental-100: #e6f2cf;
-    --color-rental-200: #cde5a0;
-    --color-rental-300: #a9d262;
-    --color-rental-400: #8cc61a;
-    --color-rental-500: #6fa800;
-    --color-rental-600: #5b8c00;
-    --color-rental-700: #4a7200;
-    --color-rental-800: #3c5c06;
-    --color-rental-900: #334d0b;
-    --color-rental-950: #1a2b00;
+    --color-rental-50: #ebfbf3;
+    --color-rental-100: #cdf5e1;
+    --color-rental-200: #9cebc4;
+    --color-rental-300: #5fd9a0;
+    --color-rental-400: #2ec98a;
+    --color-rental-500: #11b67a;
+    --color-rental-600: #0c9866;
+    --color-rental-700: #0a7a53;
+    --color-rental-800: #0b6145;
+    --color-rental-900: #0b503a;
+    --color-rental-950: #032d20;
 
-    --color-shared-50: #edf5fb;
-    --color-shared-100: #d4e7f4;
-    --color-shared-200: #a8cfe9;
-    --color-shared-300: #72b0d9;
-    --color-shared-400: #4193c6;
-    --color-shared-500: #2178b0;
-    --color-shared-600: #1b6aa0;
-    --color-shared-700: #155784;
-    --color-shared-800: #12476b;
-    --color-shared-900: #0f3a57;
-    --color-shared-950: #0a2538;
+    --color-shared-50: #f3f3fc;
+    --color-shared-100: #e7e6f9;
+    --color-shared-200: #d2d1f3;
+    --color-shared-300: #b9b7ea;
+    --color-shared-400: #9e9ce1;
+    --color-shared-500: #8280d2;
+    --color-shared-600: #6c69bf;
+    --color-shared-700: #5a57a3;
+    --color-shared-800: #4a4885;
+    --color-shared-900: #3e3d6c;
+    --color-shared-950: #262540;
 
     --color-stone-brand: #efedea;
     --color-coral: #d24702;
-    --color-lime: #77ba00;
+    --color-lime: #6cf579;
+    --color-mint: #c8ffc5;
+    --color-ink: #000d04;
 
-    --color-rental: #6fa800;
-    --color-shared: #2178b0;
+    --color-rental: #11b67a;
+    --color-shared: #8280d2;
     --font-heading: var(--font-sans);
     --font-sans: 'Figtree Variable', system-ui, sans-serif;
+    --font-display: 'Figtree Variable', system-ui, sans-serif;
     --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -102,38 +105,38 @@
 }
 
 :root {
-    --background: #f6f5f2;
-    --foreground: #1a1a1a;
+    --background: #f4f7f5;
+    --foreground: #0b1a13;
     --card: #ffffff;
-    --card-foreground: #1a1a1a;
+    --card-foreground: #0b1a13;
     --popover: #ffffff;
-    --popover-foreground: #1a1a1a;
-    --primary: #00864f;
+    --popover-foreground: #0b1a13;
+    --primary: #006c4e;
     --primary-foreground: #ffffff;
-    --secondary: #efedea;
-    --secondary-foreground: #1a1a1a;
-    --muted: #efedea;
-    --muted-foreground: #5f5f5c;
-    --accent: #ebf7f1;
-    --accent-foreground: #004a36;
-    --destructive: #dc2a4d;
-    --border: #e3e0da;
-    --input: #d9d5ce;
-    --ring: #00864f;
-    --chart-1: #00864f;
-    --chart-2: #2178b0;
-    --chart-3: #77ba00;
+    --secondary: #eaf1ed;
+    --secondary-foreground: #0b1a13;
+    --muted: #eaf1ed;
+    --muted-foreground: #56645d;
+    --accent: #e8f8f0;
+    --accent-foreground: #00553e;
+    --destructive: #d92d4e;
+    --border: #dde6e1;
+    --input: #cfdad4;
+    --ring: #11b67a;
+    --chart-1: #11b67a;
+    --chart-2: #8280d2;
+    --chart-3: #006c4e;
     --chart-4: #d24702;
-    --chart-5: #004a36;
+    --chart-5: #6cf579;
     --radius: 0.75rem;
-    --sidebar: #00382a;
-    --sidebar-foreground: #e6f1ec;
-    --sidebar-primary: #77ba00;
+    --sidebar: #003f2e;
+    --sidebar-foreground: #e3f3ea;
+    --sidebar-primary: #6cf579;
     --sidebar-primary-foreground: #00261c;
     --sidebar-accent: rgb(255 255 255 / 0.08);
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: rgb(255 255 255 / 0.1);
-    --sidebar-ring: #77ba00;
+    --sidebar-ring: #6cf579;
 }
 
 .dark {
@@ -143,8 +146,8 @@
     --card-foreground: #eef3f0;
     --popover: #13211c;
     --popover-foreground: #eef3f0;
-    --primary: #22a774;
-    --primary-foreground: #ffffff;
+    --primary: #11b67a;
+    --primary-foreground: #00261c;
     --secondary: #182822;
     --secondary-foreground: #eef3f0;
     --muted: #172520;
@@ -154,20 +157,20 @@
     --destructive: #f0536f;
     --border: rgb(255 255 255 / 0.09);
     --input: rgb(255 255 255 / 0.14);
-    --ring: #22a774;
-    --chart-1: #22a774;
-    --chart-2: #4193c6;
-    --chart-3: #8cc61a;
+    --ring: #11b67a;
+    --chart-1: #11b67a;
+    --chart-2: #9e9ce1;
+    --chart-3: #6cf579;
     --chart-4: #f19d74;
     --chart-5: #5ec59a;
     --sidebar: #07110d;
     --sidebar-foreground: #d8e6df;
-    --sidebar-primary: #8cc61a;
+    --sidebar-primary: #6cf579;
     --sidebar-primary-foreground: #00261c;
     --sidebar-accent: rgb(255 255 255 / 0.07);
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: rgb(255 255 255 / 0.08);
-    --sidebar-ring: #8cc61a;
+    --sidebar-ring: #6cf579;
 }
 
 @layer base {
@@ -243,9 +246,9 @@
 }
 
 @keyframes agent-pulse {
-  0% { box-shadow: 0 0 0 0 rgb(119 186 0 / 0.55); }
-  70% { box-shadow: 0 0 0 10px rgb(119 186 0 / 0); }
-  100% { box-shadow: 0 0 0 0 rgb(119 186 0 / 0); }
+  0% { box-shadow: 0 0 0 0 rgb(108 245 121 / 0.6); }
+  70% { box-shadow: 0 0 0 10px rgb(108 245 121 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(108 245 121 / 0); }
 }
 
 @keyframes blink {

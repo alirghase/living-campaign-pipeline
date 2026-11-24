@@ -25,7 +25,7 @@ const STATUS: Record<RunCreative['status'], { label: string; cls: string }> = {
 
 const SUGGESTIONS = ['Golden hour light', 'Add a family dog', 'More greenery', 'Show people unpacking']
 
-export function CreativeCard({ c, journey, seed, view, locked }: { c: RunCreative; journey: Journey; seed: string; view: 'creative' | 'channel'; locked: boolean }) {
+export function CreativeCard({ c, journey, seed, view, locked, location }: { c: RunCreative; journey: Journey; seed: string; view: 'creative' | 'channel'; locked: boolean; location?: string }) {
   const { selectHeadline, refine, refining } = useRun()
   const [direction, setDirection] = useState('')
   const f = formats[c.format]
@@ -42,6 +42,7 @@ export function CreativeCard({ c, journey, seed, view, locked }: { c: RunCreativ
     body: c.body,
     cta: c.cta || '…',
     image: c.image,
+    location,
     seed: `${seed}-${c.revisions}`,
     loading: c.status === 'painting' || isRefining,
   }

@@ -82,7 +82,7 @@ function NewBriefDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
           </div>
           <div className="space-y-1.5">
             <Label>Development</Label>
-            <Input value={development} onChange={(e) => setDevelopment(e.target.value)} placeholder="e.g. Frog Island, Leicester" />
+            <Input value={development} onChange={(e) => setDevelopment(e.target.value)} placeholder="e.g. Lapwings, Burleyfields, Stafford" />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Journey</Label>

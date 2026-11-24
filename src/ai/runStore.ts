@@ -6,9 +6,9 @@ import { CURRENT_USER_ID, REVIEWER } from '@/data/team'
 import type { Asset, Brief } from '@/data/types'
 import { D, H } from '@/lib/time'
 import { useStore } from '@/store/useStore'
-import { AGENTS, refineImage, runPipeline, type AgentId, type AgentStep, type Run, type RunContext, type TraceEvent } from './agents'
+import { AGENTS, recheckQa, refineImage, runPipeline, type AgentId, type AgentStep, type Run, type RunContext, type TraceEvent } from './agents'
 import { sceneUrl } from './scene'
-import { isLive, useAiSettings } from './settings'
+import { fallbacksOf, isLive, useAiSettings } from './settings'
 
 const idleSteps = () => Object.fromEntries(AGENTS.map((a) => [a.id, { status: 'idle' } as AgentStep])) as Record<AgentId, AgentStep>
 
@@ -21,6 +21,8 @@ interface RunState {
   selectHeadline: (format: string, index: number) => void
   editCopy: (format: string, patch: { headline?: string; body?: string; cta?: string }) => void
   refine: (format: string, instruction: string) => Promise<void>
+  /** Use a person-supplied key visual (e.g. made free in the Gemini app) for every format, then re-run QA. */
+  uploadVisual: (file: File) => Promise<void>
   handoff: () => string | null
   exportRun: () => void
   importRun: (file: File) => Promise<void>
@@ -48,6 +50,26 @@ export const useRun = create<RunState>((set, get) => {
       ],
     }))
 
+  const makeCtx = (live: boolean, signal: AbortSignal): RunContext => {
+    const settings = useAiSettings.getState()
+    const r = get().run!
+    return {
+      live,
+      key: settings.apiKey,
+      models: r.models,
+      fallbacks: fallbacksOf(settings),
+      signal,
+      get: () => get().run!,
+      patch,
+      log,
+      step: (agent, s) => patch((x) => ({ steps: { ...x.steps, [agent]: { ...x.steps[agent], ...s } } })),
+      usage: (u, image) =>
+        patch((x) => ({
+          stats: { ...x.stats, calls: x.stats.calls + 1, images: x.stats.images + (image ? 1 : 0), tokens: x.stats.tokens + u.promptTokens + u.outputTokens },
+        })),
+    }
+  }
+
   return {
     run: null,
     refining: null,
@@ -71,20 +93,7 @@ export const useRun = create<RunState>((set, get) => {
         models: { text: settings.textModel, image: settings.imageModel },
       }
       set({ run })
-      const ctx: RunContext = {
-        live,
-        key: settings.apiKey,
-        models: run.models,
-        signal: controller.signal,
-        get: () => get().run!,
-        patch,
-        log,
-        step: (agent, s) => patch((r) => ({ steps: { ...r.steps, [agent]: { ...r.steps[agent], ...s } } })),
-        usage: (u, image) =>
-          patch((r) => ({
-            stats: { ...r.stats, calls: r.stats.calls + 1, images: r.stats.images + (image ? 1 : 0), tokens: r.stats.tokens + u.promptTokens + u.outputTokens },
-          })),
-      }
+      const ctx = makeCtx(live, controller.signal)
       try {
         await runPipeline(ctx)
         patch(() => ({ status: 'review', endedAt: Date.now() }))
@@ -126,9 +135,12 @@ export const useRun = create<RunState>((set, get) => {
       set({ refining: format })
       log('human', 'thought', `Direction for ${formats[c.format].short}: "${instruction}"`)
       try {
+        if (isLive(settings) && c.image && r.imageBlocked) {
+          throw new Error(`Image editing isn't available on this key: ${r.imageBlocked} You can make the edit in the Gemini app and upload the result.`)
+        }
         if (isLive(settings) && c.image) {
           log('imager', 'tool', `gemini.generateContent · ${settings.imageModel} · edit with reference`, { instruction })
-          const image = await refineImage({ key: settings.apiKey, model: settings.imageModel, image: c.image, instruction, aspect: c.aspect })
+          const image = await refineImage({ key: settings.apiKey, models: [settings.imageModel, ...fallbacksOf(settings).image], image: c.image, instruction, aspect: c.aspect })
           patch((run) => ({
             creatives: run.creatives.map((x) => (x.format === format ? { ...x, image, revisions: x.revisions + 1 } : x)),
             stats: { ...run.stats, calls: run.stats.calls + 1, images: run.stats.images + 1 },
@@ -144,6 +156,26 @@ export const useRun = create<RunState>((set, get) => {
         throw e
       } finally {
         set({ refining: null })
+      }
+    },
+
+    uploadVisual: async (file) => {
+      const r = get().run
+      if (!r || r.status === 'running') return
+      const image = await downscale(file, 1600)
+      log('human', 'result', `Key visual supplied by a person (${file.name}). Applying it to all ${r.creatives.length} formats.`)
+      patch((x) => ({
+        masterImage: image,
+        uploadedVisual: true,
+        status: 'running',
+        creatives: x.creatives.map((c) => ({ ...c, image, status: 'checking', imagePrompt: c.imagePrompt })),
+      }))
+      controller = new AbortController()
+      const settings = useAiSettings.getState()
+      try {
+        await recheckQa(makeCtx(isLive(settings), controller.signal))
+      } finally {
+        patch(() => ({ status: 'review', endedAt: Date.now() }))
       }
     },
 
@@ -246,3 +278,25 @@ export const useRun = create<RunState>((set, get) => {
     },
   }
 })
+
+/** Read an image file as a JPEG data URL no larger than `max` px on its long side. */
+async function downscale(file: File, max: number): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('Please choose an image file (PNG, JPEG or WebP).')
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('That image could not be read.'))
+      i.src = url
+    })
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(img.naturalWidth * k)
+    canvas.height = Math.round(img.naturalHeight * k)
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/jpeg', 0.9)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

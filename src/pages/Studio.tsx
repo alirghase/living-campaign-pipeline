@@ -127,7 +127,7 @@ function AdaptCluster({ brief, assets }: { brief: Brief; assets: Asset[] }) {
               y1="50"
               x2={p.x}
               y2={p.y}
-              stroke={brief.journey === 'rental' ? '#6fa800' : '#2178b0'}
+              stroke={brief.journey === 'rental' ? '#11b67a' : '#8280d2'}
               strokeOpacity="0.5"
               strokeWidth="1.5"
               strokeDasharray="4 4"
