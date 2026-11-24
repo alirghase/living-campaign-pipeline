@@ -5,6 +5,7 @@ import { member } from '@/data/team'
 import type { Asset, Channel, Journey } from '@/data/types'
 import { journeyClass } from '@/lib/colors'
 import { Creative } from '@/components/creative/Creative'
+import { useStore } from '@/store/useStore'
 import { fmtDuration } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -73,11 +74,12 @@ export function AssetThumb({
   className,
   box = 'h-36',
 }: {
-  asset: Pick<Asset, 'journey' | 'format' | 'headlines' | 'cta' | 'variant' | 'id' | 'body'> & { image?: string }
+  asset: Pick<Asset, 'journey' | 'format' | 'headlines' | 'cta' | 'variant' | 'id' | 'body'> & { image?: string; briefId?: string }
   className?: string
   box?: string
   showCopy?: boolean
 }) {
+  const location = useStore((s) => s.briefs.find((b) => b.id === asset.briefId)?.development)
   return (
     <div className={cn('flex w-full items-center justify-center rounded-lg bg-muted/60 p-2', box, className)}>
       <Creative
@@ -89,6 +91,7 @@ export function AssetThumb({
         body={asset.body}
         cta={asset.cta}
         image={asset.image}
+        location={location}
         seed={`${asset.id}-${asset.variant}`}
       />
     </div>

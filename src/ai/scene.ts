@@ -22,19 +22,19 @@ function rng(seed: number) {
   }
 }
 
+// Bright blue-sky daylight, as in the brand's development photography.
 const SKIES = [
-  ['#cfe6f2', '#eef4ef', '#f8f1e4'],
-  ['#f4d7b8', '#f8e7d2', '#fbf3e8'],
-  ['#d7ebe6', '#eef5ee', '#f7f4ec'],
-  ['#c6dff0', '#e4eff3', '#f6efe3'],
+  ['#3f8fe0', '#78b4ee', '#cfe5f7'],
+  ['#4a97e6', '#8cc0f0', '#dcecf8'],
+  ['#3a86d8', '#6aaae9', '#c4def4'],
 ]
-const BRICKS = ['#c8775a', '#d8b78a', '#b9694f', '#e9e2d6', '#cf9a72', '#a65f49']
+const BRICKS = ['#c99a6b', '#d4a676', '#b8714f', '#a65f49', '#c7895f', '#bf9466']
 const ROOFS = ['#3f474d', '#55463f', '#394343', '#4a4f57']
 const DOORS: Record<Journey, string[]> = {
-  rental: ['#00864f', '#004a36', '#6fa800', '#1a1a1a'],
-  shared: ['#2178b0', '#004a36', '#155784', '#00864f'],
+  rental: ['#7fb5a0', '#5f9e98', '#1c1c1c', '#006c4e', '#8fbfa4'],
+  shared: ['#7fb5a0', '#5f9e98', '#1c1c1c', '#5a57a3', '#8fbfa4'],
 }
-const LEAVES = ['#5f9e57', '#4f8c4a', '#77ba00', '#3f7a45', '#86b86a']
+const LEAVES = ['#4f9a4a', '#5aa84f', '#3f8a45', '#6cb85a', '#478f46']
 
 const cache = new Map<string, string>()
 
@@ -59,8 +59,8 @@ export function sceneSvg(seed: string, journey: Journey, aspect: number): string
 
   out.push(`<defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset=".6" stop-color="${sky[1]}"/><stop offset="1" stop-color="${sky[2]}"/></linearGradient>
-    <radialGradient id="sun"><stop offset="0" stop-color="#fff6dc" stop-opacity=".95"/><stop offset=".35" stop-color="#ffe7b0" stop-opacity=".55"/><stop offset="1" stop-color="#ffe7b0" stop-opacity="0"/></radialGradient>
-    <linearGradient id="lawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8cc46e"/><stop offset="1" stop-color="#5f9e57"/></linearGradient>
+    <radialGradient id="sun"><stop offset="0" stop-color="#ffffff" stop-opacity=".7"/><stop offset=".35" stop-color="#ffffff" stop-opacity=".2"/><stop offset="1" stop-color="#ffe7b0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fbf4f"/><stop offset="1" stop-color="#4f9a3f"/></linearGradient>
     <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dcecf2"/><stop offset=".55" stop-color="#b8d4e0"/><stop offset="1" stop-color="#fff0c8"/></linearGradient>
   </defs>`)
   out.push(`<rect width="${W}" height="${H}" fill="url(#sky)"/>`)
@@ -83,8 +83,8 @@ export function sceneSvg(seed: string, journey: Journey, aspect: number): string
     for (let i = 0; i <= n; i++) d += ` Q${i * 200 + 100} ${y - amp * (0.4 + r())} ${(i + 1) * 200} ${y + amp * (r() - 0.5) * 0.4}`
     return `<path d="${d} L${W} ${H} Z" fill="${fill}"/>`
   }
-  out.push(hill(H * 0.6, 50, '#bcdcb4'))
-  out.push(hill(H * 0.66, 40, '#a3cf96'))
+  out.push(hill(H * 0.62, 40, '#9fc98f'))
+  out.push(hill(H * 0.68, 30, '#7fb86e'))
   out.push(`<rect y="${ground}" width="${W}" height="${H - ground}" fill="url(#lawn)"/>`)
 
   // Houses
@@ -129,7 +129,7 @@ export function sceneSvg(seed: string, journey: Journey, aspect: number): string
     const dx = x + bw * 0.2
     out.push(`<rect x="${dx - 6}" y="${ground - dh - 6}" width="${dw + 12}" height="${dh + 6}" fill="#f7f5f0"/><rect x="${dx}" y="${ground - dh}" width="${dw}" height="${dh}" rx="3" fill="${door}"/><circle cx="${dx + dw * 0.8}" cy="${ground - dh * 0.48}" r="4" fill="#e9c46a"/><path d="M${dx - 18} ${ground - dh - 10} L${dx + dw / 2} ${ground - dh - 34} L${dx + dw + 18} ${ground - dh - 10} Z" fill="${roof}"/>`)
     // path + hedge
-    out.push(`<path d="M${dx} ${ground} L${dx + dw} ${ground} L${dx + dw + 30} ${H} L${dx - 30} ${H} Z" fill="#e6dfd2"/>`)
+    out.push(`<path d="M${dx - 10} ${ground} L${dx + dw + 10} ${ground} L${dx + dw + 60} ${H} L${dx - 60} ${H} Z" fill="#4a4b4e"/>`)
     out.push(`<rect x="${x + bw * 0.48}" y="${ground - 26}" width="${bw * 0.5}" height="34" rx="17" fill="${pick(LEAVES)}"/>`)
     out.push(`</g>`)
     if (i < count - 1 || count === 1) {

@@ -11,6 +11,10 @@ interface CopyBank {
 const banks: Record<Journey, CopyBank> = {
   rental: {
     long: [
+      'Make your move to {dev}',
+      'Growing family? Give yourselves room for what\u2019s next',
+      'Built for life\u2019s next chapter',
+      'Find a home with space for your future',
       'Your next home is waiting in {area}',
       'Room to grow in {area}',
       'Move in this month — no hidden fees',
@@ -23,6 +27,8 @@ const banks: Record<Journey, CopyBank> = {
       'Managed by our own team, not an agent',
     ],
     short: [
+      'Make your move to {dev}',
+      'Room for what\u2019s next',
       'Your next home is waiting',
       'No agency fees, ever',
       'Move in this month',
@@ -76,6 +82,7 @@ function fill(text: string, brief: Brief) {
   const area = areaOf(brief)
   const seed = area.length
   return text
+    .replaceAll('{dev}', brief.development.split(',')[0].trim())
     .replaceAll('{area}', area)
     .replaceAll('{price}', String(780 + seed * 23))
     .replaceAll('{deposit}', (4200 + seed * 310).toLocaleString('en-GB'))

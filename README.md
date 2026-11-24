@@ -22,16 +22,35 @@ Copywriter and Art Director run in parallel. Everything streams into a live **ag
 
 **The design rule:** the model makes the *photography*; the brand layout system sets the *type*. Headline, CTA, logo and the mandatory disclaimer are typeset by code at each channel's true pixel size. Nothing the AI generates can misspell a legal line, and Risk always approves the exact words that will run.
 
-The whole app is styled in the Lloyds Living / Lloyds Banking Group palette: Lloyds green `#00864f`, deep green `#004a36`, lime `#77ba00` for Rental, Lloyds blue `#2178b0` for Shared Ownership, and warm stone `#efedea`. Example briefs are grounded in real Lloyds Living news: Oxenden Park (Herne Bay), Hampton Beach (Peterborough), Gaydon, Burleyfields, Pathways and the *Lloyds Living Stories* series.
+The look is taken from the **@lloydsliving Instagram feed**:
+- **Palette:** bright green `#11b67a`, dark green `#006c4e`, neon mint `#6cf579`, pale mint `#c8ffc5` and lavender `#9e9ce1`.
+- **Ad templates:** the templates copy the feed's own posts. That means swoosh panels ("Growing family?", "Make your move to Lapwings"), heavy sentence-case headlines, tilted location pills ("Osprey View, Worksop"), the stacked LLOYDS / LIVING lockup and the black arrow button with a neon ring. The lockup is text only; the black horse logo is a trademark, so it isn't reproduced.
+- **Brand line:** "Built for life's next chapter."
+
+Example briefs use real developments from the feed and the news: Lapwings (Burleyfields, Stafford), Osprey View (Worksop), Warren Wood View (Gainsborough), Oxenden Park (Herne Bay), Hampton Beach (Peterborough), Pathways and *Lloyds Living Stories*.
 
 ---
 
 ## Live or demo mode
 
 - **Demo mode** (default, no setup): every agent runs with offline outputs and a brand illustration instead of photography. Same flow, same trace, same QA self-repair. Safe for a projector with bad wi-fi.
-- **Live mode:** click **Connect Google AI Studio**, paste a key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and press **Connect**. The app lists your models and picks the newest fast text model and image model; you can change both. Image generation may need billing enabled on the AI Studio project.
+- **Live mode:** click **Connect Google AI Studio**, paste a key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and press **Connect**. The app lists your models and picks the newest fast text model and image model; you can change both.
 
-Your key stays in your browser (`localStorage`) and is sent only to `generativelanguage.googleapis.com` in the `x-goog-api-key` header. If any live call fails (quota, network, safety block), that agent falls back to its offline output and says so in the trace, so the demo never stalls.
+Your key stays in your browser (`localStorage`) and is sent only to `generativelanguage.googleapis.com` in the `x-goog-api-key` header.
+
+**When Google is busy:**
+- If a model is overloaded, rate-limited, out of quota or retired, the agents switch to the next model on your key, and the trace shows each switch.
+- The app remembers which models are down and skips them until they're likely to work again. Reconnecting your key resets this.
+- If nothing answers, that agent falls back to its offline output, so the demo never stalls.
+
+### Free route (no billing)
+
+On Google's free tier, the text, vision and QA agents work, but image models have a quota of 0. To keep everything free:
+1. Run the agents live.
+2. In **Creative concept**, click **Copy prompt**, then **Open Gemini**, and generate the image free in the Gemini app.
+3. Download the image and click **Upload**. It's used for every format, and the QA agent re-checks each asset with Gemini vision.
+
+With billing enabled, the Image Generator does this itself: one key visual, then re-frames for each format.
 
 **Safety net for the meeting:** after a good live run, click **Save run**. This downloads a JSON file including the generated images. In the meeting, **Load saved run** brings it back instantly with no network needed.
 
@@ -45,7 +64,7 @@ Your key stays in your browser (`localStorage`) and is sent only to `generativel
 - **Reset demo data** lives under the round avatar (PS), top right.
 
 ### Step 1: One brief in (Campaign Agent, the home screen)
-- Pick **Oxenden Park: first residents**. Each card cites the public news it's based on.
+- Pick **Make your move to Lapwings**. Each card cites the post or news it's based on.
 - The request box shows what a marketer would really type. Edit it live if you like: change the audience, add LinkedIn.
 - **Say:** *"No forms. Just tell it what you need."*
 - Click **Run the agent team**.

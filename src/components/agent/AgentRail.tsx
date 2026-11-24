@@ -33,7 +33,7 @@ function Node({ id, step, now }: { id: AgentId; step: AgentStep; now: number }) 
     <div
       className={cn(
         'relative flex min-w-0 flex-1 items-start gap-2.5 rounded-xl border bg-card p-3 transition-all lg:self-center',
-        running && 'border-lime/70 shadow-[0_0_0_3px_rgb(119_186_0/0.15)]',
+        running && 'border-lime/70 shadow-[0_0_0_3px_rgb(108_245_121/0.25)]',
         step.status === 'done' && 'border-brand-500/30',
         step.status === 'error' && 'border-destructive/50',
         step.status === 'idle' && 'opacity-60',
