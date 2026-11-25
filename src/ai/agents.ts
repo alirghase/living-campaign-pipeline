@@ -130,10 +130,14 @@ export interface Run {
   models: { text: string; image: string }
   error?: string
   briefId?: string
-  /** Why live image generation is unavailable on this key, if it is. */
+  /** Why live image generation didn't work, if it didn't. */
   imageBlocked?: string
-  /** True when the key visual was uploaded by a person rather than generated. */
+  /** 'quota': this key's tier has no image access. 'error': a temporary problem (network, overload, timeout). */
+  imageBlockedKind?: 'quota' | 'error'
+  /** True when the key visual was supplied by a person (uploaded or made with the free service). */
   uploadedVisual?: boolean
+  /** Where a supplied key visual came from, for the label on it. */
+  visualSource?: 'upload' | 'pollinations'
 }
 
 /** What the orchestrator needs from the store. */
@@ -551,7 +555,7 @@ async function imager(ctx: RunContext, art: ArtDirection) {
     if (isAbort(e)) throw e
     const why = (e as Error).message
     ctx.log('imager', 'warn', `No image model available, using the brand illustration instead. ${why}`, (e as GeminiError).raw)
-    ctx.patch(() => ({ imageBlocked: why }))
+    ctx.patch(() => ({ imageBlocked: why, imageBlockedKind: (e as GeminiError).quotaExhausted ? 'quota' : 'error' }))
     ctx.patch((r) => ({ creatives: r.creatives.map((c) => ({ ...c, status: 'checking' })) }))
     return
   }

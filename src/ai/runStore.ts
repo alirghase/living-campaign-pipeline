@@ -23,6 +23,8 @@ interface RunState {
   refine: (format: string, instruction: string) => Promise<void>
   /** Use a person-supplied key visual (e.g. made free in the Gemini app) for every format, then re-run QA. */
   uploadVisual: (file: File) => Promise<void>
+  /** Make the key visual with the free Pollinations service (one request), then apply it and re-run QA. */
+  generateFreeVisual: () => Promise<void>
   handoff: () => string | null
   exportRun: () => void
   importRun: (file: File) => Promise<void>
@@ -67,6 +69,27 @@ export const useRun = create<RunState>((set, get) => {
         patch((x) => ({
           stats: { ...x.stats, calls: x.stats.calls + 1, images: x.stats.images + (image ? 1 : 0), tokens: x.stats.tokens + u.promptTokens + u.outputTokens },
         })),
+    }
+  }
+
+  /** Put one key visual on every format, then have the QA agent check them again. */
+  const applyVisual = async (image: string, source: 'upload' | 'pollinations', note: string) => {
+    const r = get().run
+    if (!r) return
+    log('human', 'result', `${note} Applying it to all ${r.creatives.length} formats.`)
+    patch((x) => ({
+      masterImage: image,
+      uploadedVisual: true,
+      visualSource: source,
+      status: 'running',
+      creatives: x.creatives.map((c) => ({ ...c, image, status: 'checking' })),
+    }))
+    controller = new AbortController()
+    const settings = useAiSettings.getState()
+    try {
+      await recheckQa(makeCtx(isLive(settings), controller.signal))
+    } finally {
+      patch(() => ({ status: 'review', endedAt: Date.now() }))
     }
   }
 
@@ -136,7 +159,7 @@ export const useRun = create<RunState>((set, get) => {
       log('human', 'thought', `Direction for ${formats[c.format].short}: "${instruction}"`)
       try {
         if (isLive(settings) && c.image && r.imageBlocked) {
-          throw new Error(`Image editing isn't available on this key: ${r.imageBlocked} You can make the edit in the Gemini app and upload the result.`)
+          throw new Error(`Image editing isn't available right now: ${r.imageBlocked} You can make the edit in the Gemini app and upload the result.`)
         }
         if (isLive(settings) && c.image) {
           log('imager', 'tool', `gemini.generateContent · ${settings.imageModel} · edit with reference`, { instruction })
@@ -163,19 +186,44 @@ export const useRun = create<RunState>((set, get) => {
       const r = get().run
       if (!r || r.status === 'running') return
       const image = await downscale(file, 1600)
-      log('human', 'result', `Key visual supplied by a person (${file.name}). Applying it to all ${r.creatives.length} formats.`)
-      patch((x) => ({
-        masterImage: image,
-        uploadedVisual: true,
-        status: 'running',
-        creatives: x.creatives.map((c) => ({ ...c, image, status: 'checking', imagePrompt: c.imagePrompt })),
-      }))
-      controller = new AbortController()
-      const settings = useAiSettings.getState()
+      await applyVisual(image, 'upload', `Key visual supplied by a person (${file.name}).`)
+    },
+
+    generateFreeVisual: async () => {
+      const r = get().run
+      if (!r?.art || r.status === 'running') return
+      const prompt = freePrompt(r.art)
+      log('imager', 'tool', 'image.pollinations.ai · free image service · 1 request', { sent: prompt })
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 110_000)
       try {
-        await recheckQa(makeCtx(isLive(settings), controller.signal))
+        // Called directly: the short pollinations.ai/p/ address redirects without CORS headers, which browsers block.
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&seed=${Math.floor(Math.random() * 1e6)}`
+        let blob: Blob | undefined
+        for (let attempt = 1; attempt <= 5 && !blob; attempt++) {
+          const res = await fetch(url, { signal: ctrl.signal })
+          if (res.ok) {
+            const b = await res.blob()
+            if (!b.type.startsWith('image/')) throw new Error('The free image service did not return an image. Try again in a minute.')
+            blob = b
+          } else if (res.status === 503 || res.status === 429) {
+            if (attempt === 5) throw new Error('The free image service is busy right now. Try again in a minute.')
+            log('imager', 'warn', `The free image service is busy. Retrying in 10s (attempt ${attempt + 1} of 5).`)
+            await new Promise((r) => setTimeout(r, 10_500))
+          } else if (res.status === 403) {
+            throw new Error('The free image service only accepts requests from approved web addresses, such as the published site. It does not work from a local or unlisted address.')
+          } else {
+            throw new Error(`The free image service answered ${res.status}. Try again in a minute.`)
+          }
+        }
+        const image = await downscale(new File([blob!], 'pollinations.jpg', { type: blob!.type }), 1600)
+        await applyVisual(image, 'pollinations', 'Key visual generated with the free Pollinations service.')
+      } catch (e) {
+        const msg = (e as Error).name === 'AbortError' ? 'The free image service took too long. Try again.' : (e as Error).message
+        log('imager', 'error', msg)
+        throw new Error(msg)
       } finally {
-        patch(() => ({ status: 'review', endedAt: Date.now() }))
+        clearTimeout(timer)
       }
     },
 
@@ -299,4 +347,9 @@ async function downscale(file: File, max: number): Promise<string> {
   } finally {
     URL.revokeObjectURL(url)
   }
+}
+
+/** The prompt sent to the free service: the scene and style only, no brief, names or numbers. */
+function freePrompt(art: { scene: string; mood: string }) {
+  return `Bright UK daylight photograph for a housing brand. ${art.scene} ${art.mood} Photorealistic, wide landscape frame, clear space at the top. No text, letters, signs or logos.`.slice(0, 700)
 }
