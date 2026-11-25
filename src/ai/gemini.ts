@@ -88,35 +88,65 @@ function toError(status: number, body: string, model?: string): GeminiError {
   return new GeminiError(raw || `HTTP ${status}`, status, { raw })
 }
 
-async function request<T>(key: string, path: string, init: RequestInit = {}, signal?: AbortSignal, model?: string): Promise<T> {
+/** Longest we wait for one model to answer before trying the next. */
+export const TIMEOUT_MS = { text: 45_000, image: 90_000, list: 20_000 }
+
+async function request<T>(key: string, path: string, init: RequestInit = {}, signal?: AbortSignal, model?: string, timeoutMs = TIMEOUT_MS.text): Promise<T> {
   let lastErr: unknown
   for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    let res: Response
+    // Our own controller, so a model that hangs can be abandoned without cancelling the run.
+    const ctrl = new AbortController()
+    let timedOut = false
+    const onAbort = () => ctrl.abort()
+    signal?.addEventListener('abort', onAbort)
+    const timer = setTimeout(() => {
+      timedOut = true
+      ctrl.abort()
+    }, timeoutMs)
     try {
-      res = await fetch(`${BASE}${path}`, {
-        ...init,
-        signal,
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key, ...(init.headers ?? {}) },
-      })
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') throw e
-      lastErr = new GeminiError(`Network error reaching Google AI Studio: ${(e as Error).message}`, 0)
-      await sleep(800 * (attempt + 1), signal)
-      continue
+      let res: Response
+      try {
+        res = await fetch(`${BASE}${path}`, {
+          ...init,
+          signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key, ...(init.headers ?? {}) },
+        })
+      } catch (e) {
+        if (timedOut) throw timeoutError(model, timeoutMs)
+        if ((e as Error).name === 'AbortError') throw e
+        lastErr = new GeminiError(`Network error reaching Google AI Studio: ${(e as Error).message}`, 0)
+        await sleep(800 * (attempt + 1), signal)
+        continue
+      }
+      // Reading the body counts against the same time limit.
+      let text: string
+      try {
+        text = await res.text()
+      } catch (e) {
+        if (timedOut) throw timeoutError(model, timeoutMs)
+        throw e
+      }
+      if (res.ok) return JSON.parse(text) as T
+      const err = toError(res.status, text, model)
+      // One quick retry for a plain server error. Overload (503), rate limits, quota and
+      // timeouts go straight back to the caller, which switches model instead of waiting.
+      if (res.status === 500 && attempt === 0) {
+        lastErr = err
+        await sleep(1200, signal)
+        continue
+      }
+      throw err
+    } finally {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
     }
-    if (res.ok) return (await res.json()) as T
-    const err = toError(res.status, await res.text(), model)
-    // One quick retry for a plain server error. Overload (503), rate limits and quota go
-    // straight back to the caller, which switches model instead of waiting.
-    if (res.status === 500 && attempt === 0) {
-      lastErr = err
-      await sleep(1200, signal)
-      continue
-    }
-    throw err
   }
   throw lastErr
+}
+
+function timeoutError(model: string | undefined, ms: number) {
+  return new GeminiError(`No answer${model ? ` from ${model}` : ''} within ${Math.round(ms / 1000)}s.`, 504)
 }
 
 /*
@@ -135,7 +165,7 @@ const health: Map<string, number> = (() => {
 })()
 
 function benchModel(model: string, e: GeminiError) {
-  const sec = e.status === 404 ? 6 * 3600 : e.status === 429 ? (e.quotaExhausted ? Math.max(e.retryAfter ?? 0, 3600) : (e.retryAfter ?? 20)) : 90
+  const sec = e.status === 404 ? 6 * 3600 : e.status === 429 ? (e.quotaExhausted ? Math.max(e.retryAfter ?? 0, 3600) : (e.retryAfter ?? 20)) : e.status === 504 ? 300 : 90
   health.set(model, Date.now() + sec * 1000)
   try {
     localStorage.setItem(HEALTH_KEY, JSON.stringify(Object.fromEntries(health)))
@@ -248,6 +278,8 @@ export async function listModels(key: string, signal?: AbortSignal): Promise<Mod
     '/models?pageSize=1000',
     { method: 'GET' },
     signal,
+    undefined,
+    TIMEOUT_MS.list,
   )
   return (r.models ?? []).map((m) => ({
     id: m.name.replace(/^models\//, ''),
@@ -361,7 +393,7 @@ export async function generateImage(c: ImageCall): Promise<{ image: string; note
   })
   const call = async (model: string) => {
     const post = (withRatio: boolean) =>
-      request<GenerateResponse>(c.key, `/models/${model}:generateContent`, { method: 'POST', body: JSON.stringify(body(withRatio)) }, c.signal, model)
+      request<GenerateResponse>(c.key, `/models/${model}:generateContent`, { method: 'POST', body: JSON.stringify(body(withRatio)) }, c.signal, model, TIMEOUT_MS.image)
     try {
       return await post(true)
     } catch (e) {
