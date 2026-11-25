@@ -43,12 +43,12 @@ Your key stays in your browser (`localStorage`) and is sent only to `generativel
 - The app remembers which models are down and skips them until they're likely to work again. Reconnecting your key resets this.
 - If nothing answers, that agent falls back to its offline output, so the demo never stalls.
 
-### Free route (no billing)
+### Free routes for the key visual (no billing)
 
-On Google's free tier, the text, vision and QA agents work, but image models have a quota of 0. To keep everything free:
-1. Run the agents live.
-2. In **Creative concept**, click **Copy prompt**, then **Open Gemini**, and generate the image free in the Gemini app.
-3. Download the image and click **Upload**. It's used for every format, and the QA agent re-checks each asset with Gemini vision.
+On Google's free tier, the text, vision and QA agents work, but image models have a quota of 0. Under **Creative concept** you have two free options, and either one is then applied to every format and re-checked by the QA agent:
+
+- **Generate free with Pollinations:** one click. It sends only the scene description (no brief, names or numbers) to the free [Pollinations](https://pollinations.ai) service. The image is 1024px wide with a small "pollinations.ai" watermark. The keyless tier only accepts requests from approved web addresses such as the published site, so it won't work from `localhost`, and it can be busy (the button retries).
+- **Make it in the Gemini app:** copy the prompt, generate the image there, download it and upload it.
 
 With billing enabled, the Image Generator does this itself: one key visual, then re-frames for each format.
 
